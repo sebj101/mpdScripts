@@ -65,7 +65,7 @@ void pionMultiPlots(const char *outFile,
 
   // ND vars
   const Var kRecoEnergyND  = SIMPLEVAR(dune.Ev_reco);
-  const Var kRecoYND       = (SIMPLEVAR(dune.Ev_reco)-SIMPLEVAR(dune.Elep_reco))/SIMPLEVAR(dune.Ev_reco);
+  // const Var kRecoYND       = (SIMPLEVAR(dune.Ev_reco)-SIMPLEVAR(dune.Elep_reco))/SIMPLEVAR(dune.Ev_reco);
   const Var kTrueYND       = (SIMPLEVAR(dune.Ev)-SIMPLEVAR(dune.LepE))/SIMPLEVAR(dune.Ev);
   const Var kTrueEnergy    = SIMPLEVAR(dune.Ev);
   const Var kTrueLepEnergy = SIMPLEVAR(dune.LepE);
@@ -83,23 +83,22 @@ void pionMultiPlots(const char *outFile,
 				   3., 3.25, 3.5, 3.75,
 				   4., 5., 6., 10.};
   std::vector<double> binYEdges = {0, 0.1, 0.2, 0.3, 0.4, 0.6, 1.0};
-  const Binning binsNDEreco  = Binning::Custom(binEEdges);
+  const Binning binsEreco  = Binning::Custom(binEEdges);
   const Binning simpleBins   = Binning::Simple(20, 0, 5);
   const Binning simpleWBins  = Binning::Simple(30, 0, 6);
   const Binning simpleQ2Bins = Binning::Simple(30, 0, 6);
-
+  const HistAxis axND = ("E_{#nu, reco} (GeV)", binsEreco, kRecoEnergyND);
   const HistAxis axTrueRecoND("E_{#nu, true} (GeV)", simpleBins, kTrueEnergy,
 			      "E_{#nu, reco} (GeV)", simpleBins, kRecoEnergyND);
   const HistAxis axQ2("Q^{2} (GeV)^{2}", simpleQ2Bins, kQ2);
   const HistAxis axW("W (GeV)", simpleWBins, kW);
-  const HistAxis axisnumu("Reco #nu energy (GeV)", Binning::Simple(40, 0, 10), Enu_reco_numu);
-  const HistAxis axisnue("Reco #nu energy (GeV)", Binning::Simple(40, 0, 10), Enu_reco_nue);
+  const HistAxis axisnumu("Reco #nu energy (GeV)", binsEreco, Enu_reco_numu);
+  const HistAxis axisnue("Reco #nu energy (GeV)", binsEreco, Enu_reco_nue);
   // POT for 3.5 years
   const double pot_fd = 3.5 * POT120 * 40/1.13;
   const double pot_nd = 3.5 * POT120;
   // This is pretty annoying, but the above is for 7 years staged, which is 336 kT MW yr
   const double nom_exposure = 336.;
-
 
   osc::IOscCalculatorAdjustable* this_calc = NuFitOscCalc(1);
   
@@ -128,14 +127,22 @@ void pionMultiPlots(const char *outFile,
   loadersLArFHC.AddLoader(&loaderLArFHC, caf::kNEARDET, Loaders::kMC);
   loadersLArRHC.AddLoader(&loaderLArRHC, caf::kNEARDET, Loaders::kMC);
 
-  //loadersFHC.Go();
-  //loadersRHC.Go();
-  
+  loadersFHC.Go();
+  loadersRHC.Go();  
+
+
+
+  NoOscPredictionGenerator genLAr1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV);
+  NoOscPredictionGenerator genLArCC0Pi1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV && kIsCC0Pi);
+  NoOscPredictionGenerator genLArCC1Pi1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV && kIsCC1Pi);
+  NoOscPredictionGenerator genLArCC2Pi1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV && kIsCC2Pi);
+  NoOscPredictionGenerator genLArCC3Pi1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV && kIsCC3Pi);
+
   NoOscPredictionGenerator genLAr(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV);
-  NoOscPredictionGenerator genLArCC0Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC0Pi);
-  NoOscPredictionGenerator genLArCC1Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC1Pi);
-  NoOscPredictionGenerator genLArCC2Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC2Pi);
-  NoOscPredictionGenerator genLArCC3Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC3Pi);
+  NoOscPredictionGenerator genLArCC0Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV && kIsCC0Pi);
+  NoOscPredictionGenerator genLArCC1Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV && kIsCC1Pi);
+  NoOscPredictionGenerator genLArCC2Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV && kIsCC2Pi);
+  NoOscPredictionGenerator genLArCC3Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV && kIsCC3Pi);
 
   NoOscPredictionGenerator WLAr(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV);
   NoOscPredictionGenerator WLArCC0Pi(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC0Pi);
@@ -155,6 +162,12 @@ void pionMultiPlots(const char *outFile,
   PredictionInterp predLArCC1Pi(systlist, this_calc, genLArCC1Pi, loadersLArFHC);
   PredictionInterp predLArCC2Pi(systlist, this_calc, genLArCC2Pi, loadersLArFHC);
   PredictionInterp predLArCC3Pi(systlist, this_calc, genLArCC3Pi, loadersLArFHC);
+
+  PredictionInterp predLAr1d(systlist, this_calc, genLAr1d, loadersLArFHC);
+  PredictionInterp predLArCC0Pi1d(systlist, this_calc, genLArCC0Pi1d, loadersLArFHC);
+  PredictionInterp predLArCC1Pi1d(systlist, this_calc, genLArCC1Pi1d, loadersLArFHC);
+  PredictionInterp predLArCC2Pi1d(systlist, this_calc, genLArCC2Pi1d, loadersLArFHC);
+  PredictionInterp predLArCC3Pi1d(systlist, this_calc, genLArCC3Pi1d, loadersLArFHC);
 
   PredictionInterp predWLAr(systlist, this_calc, WLAr, loadersLArFHC);
   PredictionInterp predWLArCC0Pi(systlist, this_calc, WLArCC0Pi, loadersLArFHC);
@@ -187,23 +200,29 @@ void pionMultiPlots(const char *outFile,
   PredictionInterp predQ2LArCC3PiRHC(systlist, this_calc, Q2LArCC3Pi, loadersLArRHC);
 
   // GAr ND samples
-  NoOscPredictionGenerator genGAr(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)));
-  NoOscPredictionGenerator genGArCC0Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC0Pi);
-  NoOscPredictionGenerator genGArCC1Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC1Pi);
-  NoOscPredictionGenerator genGArCC2Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC2Pi);
-  NoOscPredictionGenerator genGArCC3Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC3Pi);
+  NoOscPredictionGenerator genGAr(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV);
+  NoOscPredictionGenerator genGArCC0Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC0Pi && kIsTrueGasFV);
+  NoOscPredictionGenerator genGArCC1Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC1Pi && kIsTrueGasFV);
+  NoOscPredictionGenerator genGArCC2Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC2Pi && kIsTrueGasFV);
+  NoOscPredictionGenerator genGArCC3Pi(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC3Pi && kIsTrueGasFV);
 
-  NoOscPredictionGenerator WGAr(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)));
-  NoOscPredictionGenerator WGArCC0Pi(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) &&kIsTrueFV && kIsCC0Pi);
-  NoOscPredictionGenerator WGArCC1Pi(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC1Pi);
-  NoOscPredictionGenerator WGArCC2Pi(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC2Pi);
-  NoOscPredictionGenerator WGArCC3Pi(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC3Pi);
+  NoOscPredictionGenerator genGAr1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV);
+  NoOscPredictionGenerator genGArCC0Pi1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV && kIsCC0Pi);
+  NoOscPredictionGenerator genGArCC1Pi1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV && kIsCC1Pi);
+  NoOscPredictionGenerator genGArCC2Pi1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV && kIsCC2Pi);
+  NoOscPredictionGenerator genGArCC3Pi1d(axND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV && kIsCC3Pi);
 
-  NoOscPredictionGenerator Q2GAr(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)));
-  NoOscPredictionGenerator Q2GArCC0Pi(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC0Pi);
-  NoOscPredictionGenerator Q2GArCC1Pi(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC1Pi);
-  NoOscPredictionGenerator Q2GArCC2Pi(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC2Pi);
-  NoOscPredictionGenerator Q2GArCC3Pi(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC3Pi);
+  NoOscPredictionGenerator WGAr(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV);
+  NoOscPredictionGenerator WGArCC0Pi(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC0Pi && kIsTrueGasFV);
+  NoOscPredictionGenerator WGArCC1Pi(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC1Pi && kIsTrueGasFV);
+  NoOscPredictionGenerator WGArCC2Pi(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC2Pi && kIsTrueGasFV);
+  NoOscPredictionGenerator WGArCC3Pi(axW, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC3Pi && kIsTrueGasFV);
+
+  NoOscPredictionGenerator Q2GAr(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV);
+  NoOscPredictionGenerator Q2GArCC0Pi(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC0Pi && kIsTrueGasFV);
+  NoOscPredictionGenerator Q2GArCC1Pi(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC1Pi && kIsTrueGasFV);
+  NoOscPredictionGenerator Q2GArCC2Pi(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC2Pi && kIsTrueGasFV);
+  NoOscPredictionGenerator Q2GArCC3Pi(axQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsCC3Pi && kIsTrueGasFV);
 
   // FHC
   PredictionInterp predGAr(systlist, this_calc, genGAr, loadersGArFHC);
@@ -211,6 +230,12 @@ void pionMultiPlots(const char *outFile,
   PredictionInterp predGArCC1Pi(systlist, this_calc, genGArCC1Pi, loadersGArFHC);
   PredictionInterp predGArCC2Pi(systlist, this_calc, genGArCC2Pi, loadersGArFHC);
   PredictionInterp predGArCC3Pi(systlist, this_calc, genGArCC3Pi, loadersGArFHC);
+
+  PredictionInterp predGAr1d(systlist, this_calc, genGAr1d, loadersGArFHC);
+  PredictionInterp predGArCC0Pi1d(systlist, this_calc, genGArCC0Pi1d, loadersGArFHC);
+  PredictionInterp predGArCC1Pi1d(systlist, this_calc, genGArCC1Pi1d, loadersGArFHC);
+  PredictionInterp predGArCC2Pi1d(systlist, this_calc, genGArCC2Pi1d, loadersGArFHC);
+  PredictionInterp predGArCC3Pi1d(systlist, this_calc, genGArCC3Pi1d, loadersGArFHC);
 
   PredictionInterp predWGAr(systlist, this_calc, WGAr, loadersGArFHC);
   PredictionInterp predWGArCC0Pi(systlist, this_calc, WGArCC0Pi, loadersGArFHC);
@@ -252,14 +277,23 @@ void pionMultiPlots(const char *outFile,
   TH2 *h2LAr           = predLAr.Predict(0).ToTH2(pot_nd);
   setHistAttr(h2LAr);
   TH2 *h2LArNuWro      = predLAr.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2LArNuWro);
   TH2 *h2LArCC0Pi      = predLArCC0Pi.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2LArCC0Pi);
   TH2 *h2LArCC0PiNuWro = predLArCC0Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2LArCC0PiNuWro);
   TH2 *h2LArCC1Pi      = predLArCC1Pi.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2LArCC1Pi);
   TH2 *h2LArCC1PiNuWro = predLArCC1Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2LArCC1PiNuWro);
   TH2 *h2LArCC2Pi      = predLArCC2Pi.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2LArCC2Pi);
   TH2 *h2LArCC2PiNuWro = predLArCC2Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2LArCC2PiNuWro);
   TH2 *h2LArCC3Pi      = predLArCC3Pi.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2LArCC3Pi);
   TH2 *h2LArCC3PiNuWro = predLArCC3Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2LArCC3PiNuWro);
 
   TH1 *hWLArCC0Pi      = predWLArCC0Pi.Predict(0).ToTH1(pot_nd);
   TH1 *hWLArCC0PiNuWro = predWLArCC0Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH1(pot_nd);
@@ -279,13 +313,21 @@ void pionMultiPlots(const char *outFile,
   TH1 *hQ2LArCC3Pi      = predQ2LArCC3Pi.Predict(0).ToTH1(pot_nd);
   TH1 *hQ2LArCC3PiNuWro = predQ2LArCC3Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH1(pot_nd);
 
+  TH1 *h
+
   // LAr RHC
   TH2 *h2LArRHC           = predLArRHC.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2LArRHC);
   TH2 *h2LArNuWroRHC      = predLArRHC.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2LArNuWroRHC);
   TH2 *h2LArCC0PiRHC      = predLArCC0PiRHC.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2LArCC0PiRHC); 
   TH2 *h2LArCC0PiNuWroRHC = predLArCC0PiRHC.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2LArCC0PiNuWroRHC); 
   TH2 *h2LArCC1PiRHC      = predLArCC1PiRHC.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2LArCC1PiRHC); 
   TH2 *h2LArCC1PiNuWroRHC = predLArCC1PiRHC.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2LArCC1PiNuWroRHC); 
   TH2 *h2LArCC2PiRHC      = predLArCC2PiRHC.Predict(0).ToTH2(pot_nd);
   TH2 *h2LArCC2PiNuWroRHC = predLArCC2PiRHC.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
   TH2 *h2LArCC3PiRHC      = predLArCC3PiRHC.Predict(0).ToTH2(pot_nd);
@@ -310,15 +352,25 @@ void pionMultiPlots(const char *outFile,
   TH1 *hQ2LArCC3PiNuWroRHC = predQ2LArCC3PiRHC.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH1(pot_nd);
 
   TH2 *h2GAr           = predGAr.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2GAr); 
   TH2 *h2GArNuWro      = predGAr.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2GArNuWro); 
   TH2 *h2GArCC0Pi      = predGArCC0Pi.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2GArCC0Pi); 
   TH2 *h2GArCC0PiNuWro = predGArCC0Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2GArCC0PiNuWro); 
   TH2 *h2GArCC1Pi      = predGArCC1Pi.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2GArCC1PiNuWro); 
   TH2 *h2GArCC1PiNuWro = predGArCC1Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2GArCC1PiNuWro); 
   TH2 *h2GArCC2Pi      = predGArCC2Pi.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2GArCC2Pi); 
   TH2 *h2GArCC2PiNuWro = predGArCC2Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2GArCC2PiNuWro); 
   TH2 *h2GArCC3Pi      = predGArCC3Pi.Predict(0).ToTH2(pot_nd);
+  setHistAttr(h2GArCC3Pi); 
   TH2 *h2GArCC3PiNuWro = predGArCC3Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH2(pot_nd);
+  setHistAttr(h2GArCC3PiNuWro); 
 
   TH1 *hWGArCC0Pi      = predWGArCC0Pi.Predict(0).ToTH1(pot_nd);
   TH1 *hWGArCC0PiNuWro = predWGArCC0Pi.PredictSyst(0, SystShifts(systlist.at(0), 1)).ToTH1(pot_nd);
@@ -509,10 +561,10 @@ void pionMultiPlots(const char *outFile,
   hsWGArCC2Pi->Write("hsWGArCC2Pi");
   hsWGArCC3Pi->Write("hsWGArCC3Pi");
 
-  THStack *hsQ2GArCC0Pi = new THStack("hsQ2GArCC0Pi", "Q^2 in GAr ND, CC0#pi; Q^2; Events");
-  THStack *hsQ2GArCC1Pi = new THStack("hsQ2GArCC1Pi", "Q^2 in GAr ND, CC1#pi; Q^2; Events");
-  THStack *hsQ2GArCC2Pi = new THStack("hsQ2GArCC2Pi", "Q^2 in GAr ND, CC2#pi; Q^2; Events");
-  THStack *hsQ2GArCC3Pi = new THStack("hsQ2GArCC3Pi", "Q^2 in GAr ND, CC3#pi; Q^2; Events");
+  THStack *hsQ2GArCC0Pi = new THStack("hsQ2GArCC0Pi", "Q^{2} in GAr ND, CC0#pi; Q^{2}; Events");
+  THStack *hsQ2GArCC1Pi = new THStack("hsQ2GArCC1Pi", "Q^{2} in GAr ND, CC1#pi; Q^{2}; Events");
+  THStack *hsQ2GArCC2Pi = new THStack("hsQ2GArCC2Pi", "Q^{2} in GAr ND, CC2#pi; Q^{2}; Events");
+  THStack *hsQ2GArCC3Pi = new THStack("hsQ2GArCC3Pi", "Q^{2} in GAr ND, CC3#pi; Q^{2}; Events");
   hQ2GArCC0PiNuWro->SetLineColor(kRed);
   hQ2GArCC1PiNuWro->SetLineColor(kRed);
   hQ2GArCC2PiNuWro->SetLineColor(kRed);
@@ -551,10 +603,10 @@ void pionMultiPlots(const char *outFile,
   hsWLArCC2Pi->Write("hsWLArCC2Pi");
   hsWLArCC3Pi->Write("hsWLArCC3Pi");
 
-  THStack *hsQ2LArCC0Pi = new THStack("hsQ2LArCC0Pi", "Q^2 in LAr ND, CC0#pi; Q^2; Events");
-  THStack *hsQ2LArCC1Pi = new THStack("hsQ2LArCC1Pi", "Q^2 in LAr ND, CC1#pi; Q^2; Events");
-  THStack *hsQ2LArCC2Pi = new THStack("hsQ2LArCC2Pi", "Q^2 in LAr ND, CC2#pi; Q^2; Events");
-  THStack *hsQ2LArCC3Pi = new THStack("hsQ2LArCC3Pi", "Q^2 in LAr ND, CC3#pi; Q^2; Events");
+  THStack *hsQ2LArCC0Pi = new THStack("hsQ2LArCC0Pi", "Q^{2} in LAr ND, CC0#pi; Q^{2}; Events");
+  THStack *hsQ2LArCC1Pi = new THStack("hsQ2LArCC1Pi", "Q^{2} in LAr ND, CC1#pi; Q^{2}; Events");
+  THStack *hsQ2LArCC2Pi = new THStack("hsQ2LArCC2Pi", "Q^{2} in LAr ND, CC2#pi; Q^{2}; Events");
+  THStack *hsQ2LArCC3Pi = new THStack("hsQ2LArCC3Pi", "Q^{2} in LAr ND, CC3#pi; Q^{2}; Events");
   hQ2LArCC0PiNuWro->SetLineColor(kRed);
   hQ2LArCC1PiNuWro->SetLineColor(kRed);
   hQ2LArCC2PiNuWro->SetLineColor(kRed);
@@ -571,6 +623,127 @@ void pionMultiPlots(const char *outFile,
   hsQ2LArCC1Pi->Write("hsQ2LArCC1Pi");
   hsQ2LArCC2Pi->Write("hsQ2LArCC2Pi");
   hsQ2LArCC3Pi->Write("hsQ2LArCC3Pi");
+
+  THStack *hsQ2LAr = new THStack("hsQ2LAr", "LAr CC #nu_{#mu} events for various #pi multiplicities; Q^{2}; Events");
+  hQ2LArCC0Pi->SetLineColor(kBlack);
+  hQ2LArCC0Pi->SetFillColor(kBlack);
+  hQ2LArCC1Pi->SetLineColor(kBlue);
+  hQ2LArCC1Pi->SetFillColor(kBlue);
+  hQ2LArCC2Pi->SetLineColor(kRed);
+  hQ2LArCC2Pi->SetFillColor(kRed);
+  hQ2LArCC3Pi->SetLineColor(kGreen+2);
+  hQ2LArCC3Pi->SetFillColor(kGreen+2);
+  hsQ2LAr->Add(hQ2LArCC0Pi);
+  hsQ2LAr->Add(hQ2LArCC1Pi);
+  hsQ2LAr->Add(hQ2LArCC2Pi);
+  hsQ2LAr->Add(hQ2LArCC3Pi);
+
+  THStack *hsQ2LArNuWro = new THStack("hsQ2LArNuWro", "LAr CC #nu_{#mu} events for various #pi multiplicities (NuWro shifts); Q^{2}; Events");
+  hQ2LArCC0PiNuWro->SetLineColor(kBlack);
+  hQ2LArCC0PiNuWro->SetFillColor(kBlack);
+  hQ2LArCC1PiNuWro->SetLineColor(kBlue);
+  hQ2LArCC1PiNuWro->SetFillColor(kBlue);
+  hQ2LArCC2PiNuWro->SetLineColor(kRed);
+  hQ2LArCC2PiNuWro->SetFillColor(kRed);
+  hQ2LArCC3PiNuWro->SetLineColor(kGreen+2);
+  hQ2LArCC3PiNuWro->SetFillColor(kGreen+2);
+  hsQ2LArNuWro->Add(hQ2LArCC0PiNuWro);
+  hsQ2LArNuWro->Add(hQ2LArCC1PiNuWro);
+  hsQ2LArNuWro->Add(hQ2LArCC2PiNuWro);
+  hsQ2LArNuWro->Add(hQ2LArCC3PiNuWro);
+
+  THStack *hsWLAr = new THStack("hsWLAr", "LAr ND CC #nu_{#mu} events for various #pi multiplicities; W; Events");
+  hWLArCC0Pi->SetLineColor(kBlack);
+  hWLArCC0Pi->SetFillColor(kBlack);
+  hWLArCC1Pi->SetLineColor(kBlue);
+  hWLArCC1Pi->SetFillColor(kBlue);
+  hWLArCC2Pi->SetLineColor(kRed);
+  hWLArCC2Pi->SetFillColor(kRed);
+  hWLArCC3Pi->SetLineColor(kGreen+2);
+  hWLArCC3Pi->SetFillColor(kGreen+2);
+  hsWLAr->Add(hWLArCC0Pi);
+  hsWLAr->Add(hWLArCC1Pi);
+  hsWLAr->Add(hWLArCC2Pi);
+  hsWLAr->Add(hWLArCC3Pi);
+
+  THStack *hsWLArNuWro = new THStack("hsWLArNuWro", "LAr ND CC #nu_{#mu} events for various #pi multiplicities (NuWro shifts); W; Events");
+  hWLArCC0PiNuWro->SetLineColor(kBlack);
+  hWLArCC0PiNuWro->SetFillColor(kBlack);
+  hWLArCC1PiNuWro->SetLineColor(kBlue);
+  hWLArCC1PiNuWro->SetFillColor(kBlue);
+  hWLArCC2PiNuWro->SetLineColor(kRed);
+  hWLArCC2PiNuWro->SetFillColor(kRed);
+  hWLArCC3PiNuWro->SetLineColor(kGreen+2);
+  hWLArCC3PiNuWro->SetFillColor(kGreen+2);
+  hsWLArNuWro->Add(hWLArCC0PiNuWro);
+  hsWLArNuWro->Add(hWLArCC1PiNuWro);
+  hsWLArNuWro->Add(hWLArCC2PiNuWro);
+  hsWLArNuWro->Add(hWLArCC3PiNuWro);
+
+  THStack *hsQ2GAr = new THStack("hsQ2GAr", "GAr CC #nu_{#mu} events for various #pi multiplicities; Q^{2}; Events");
+  hQ2GArCC0Pi->SetLineColor(kBlack);
+  hQ2GArCC0Pi->SetFillColor(kBlack);
+  hQ2GArCC1Pi->SetLineColor(kBlue);
+  hQ2GArCC1Pi->SetFillColor(kBlue);
+  hQ2GArCC2Pi->SetLineColor(kRed);
+  hQ2GArCC2Pi->SetFillColor(kRed);
+  hQ2GArCC3Pi->SetLineColor(kGreen+2);
+  hQ2GArCC3Pi->SetFillColor(kGreen+2);
+  hsQ2GAr->Add(hQ2GArCC0Pi);
+  hsQ2GAr->Add(hQ2GArCC1Pi);
+  hsQ2GAr->Add(hQ2GArCC2Pi);
+  hsQ2GAr->Add(hQ2GArCC3Pi);
+
+  THStack *hsQ2GArNuWro = new THStack("hsQ2GArNuWro", "GAr CC #nu_{#mu} events for various #pi multiplicities (NuWro shifts); Q^{2}; Events");
+  hQ2GArCC0PiNuWro->SetLineColor(kBlack);
+  hQ2GArCC0PiNuWro->SetFillColor(kBlack);
+  hQ2GArCC1PiNuWro->SetLineColor(kBlue);
+  hQ2GArCC1PiNuWro->SetFillColor(kBlue);
+  hQ2GArCC2PiNuWro->SetLineColor(kRed);
+  hQ2GArCC2PiNuWro->SetFillColor(kRed);
+  hQ2GArCC3PiNuWro->SetLineColor(kGreen+2);
+  hQ2GArCC3PiNuWro->SetFillColor(kGreen+2);
+  hsQ2GArNuWro->Add(hQ2GArCC0PiNuWro);
+  hsQ2GArNuWro->Add(hQ2GArCC1PiNuWro);
+  hsQ2GArNuWro->Add(hQ2GArCC2PiNuWro);
+  hsQ2GArNuWro->Add(hQ2GArCC3PiNuWro);
+
+  THStack *hsWGAr = new THStack("hsWGAr", "GAr ND CC #nu_{#mu} events for various #pi multiplicities; W; Events");
+  hWGArCC0Pi->SetLineColor(kBlack);
+  hWGArCC0Pi->SetFillColor(kBlack);
+  hWGArCC1Pi->SetLineColor(kBlue);
+  hWGArCC1Pi->SetFillColor(kBlue);
+  hWGArCC2Pi->SetLineColor(kRed);
+  hWGArCC2Pi->SetFillColor(kRed);
+  hWGArCC3Pi->SetLineColor(kGreen+2);
+  hWGArCC3Pi->SetFillColor(kGreen+2);
+  hsWGAr->Add(hWGArCC0Pi);
+  hsWGAr->Add(hWGArCC1Pi);
+  hsWGAr->Add(hWGArCC2Pi);
+  hsWGAr->Add(hWGArCC3Pi);
+
+  THStack *hsWGArNuWro = new THStack("hsWGArNuWro", "GAr ND CC #nu_{#mu} events for various #pi multiplicities (NuWro shifts); W; Events");
+  hWGArCC0PiNuWro->SetLineColor(kBlack);
+  hWGArCC0PiNuWro->SetFillColor(kBlack);
+  hWGArCC1PiNuWro->SetLineColor(kBlue);
+  hWGArCC1PiNuWro->SetFillColor(kBlue);
+  hWGArCC2PiNuWro->SetLineColor(kRed);
+  hWGArCC2PiNuWro->SetFillColor(kRed);
+  hWGArCC3PiNuWro->SetLineColor(kGreen+2);
+  hWGArCC3PiNuWro->SetFillColor(kGreen+2);
+  hsWGArNuWro->Add(hWGArCC0PiNuWro);
+  hsWGArNuWro->Add(hWGArCC1PiNuWro);
+  hsWGArNuWro->Add(hWGArCC2PiNuWro);
+  hsWGArNuWro->Add(hWGArCC3PiNuWro);
+
+  hsWLAr->Write();
+  hsWLArNuWro->Write();
+  hsWGAr->Write();
+  hsWGArNuWro->Write();
+  hsQ2LAr->Write();
+  hsQ2LArNuWro->Write();
+  hsQ2GAr->Write();
+  hsQ2GArNuWro->Write();
 
   fout->Close();
   delete fout;
