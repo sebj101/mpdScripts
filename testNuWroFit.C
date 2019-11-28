@@ -99,9 +99,9 @@ const Var kRecoChargedPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.ga
 const Var kRecoPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult) + SIMPLEVAR(dune.gastpc_pi_0_mult);
 const Var kThetaReco = SIMPLEVAR(dune.theta_reco);
 
-std::vector<double> binEEdges = {0., 0.75, 1.25, 1.5, 1.75, 
-				 2., 2.25, 2.5, 2.75, 
-				 3., 3.25, 3.5, 3.75,
+std::vector<double> binEEdges = {0., 0.5, 1., 1.25, 1.5, 1.75,
+                                 2., 2.25, 2.5, 2.75, 
+				 3., 3.25, 3.5, 3.75, 
 				 4., 5., 6., 10.};
 std::vector<double> binYEdges = {0, 0.1, 0.2, 0.3, 0.4, 0.6, 1.0};
 const Binning binsEreco  = Binning::Custom(binEEdges);
@@ -126,18 +126,20 @@ const double pot_nd = 3.5 * POT120;
 // This is pretty annoying, but the above is for 7 years staged, which is 336 kT MW yr
 const double nom_exposure = 336.;
 // Oscillation variables to fit
-std::vector<const IFitVar*> fitVars = {&kFitDmSq32NHScaled, &kFitTheta13, &kFitSinSqTheta23, &kFitDeltaInPiUnits};
+std::vector<const IFitVar*> fitVars = {&kFitDmSq32NHScaled, &kFitTheta13, &kFitSinSqTheta23, &kFitDeltaInPiUnits, &kFitRho};
 
 void testNuWroFit(const char* outFile, const char* saveDir, 
 		  bool makeFDInterps=false, bool makeNDInterps=false,
 		  const char *lardir="/pnfs/dune/persistent/users/picker24/CAFv4/", 
-		  const char *gardir="/dune/data/users/sbjones/gasTpcCAF/v2/",
-		  const char *v4cafs="/cvmfs/dune.osgstorage.org/pnfs/fnal.gov/usr/dune/persistent/stash/LongBaseline/state_files/standard_v4") 
+		  const char *gardir="/dune/data/users/sbjones/gasTpcCAF/v2/")
 {
   gROOT->SetBatch(kTRUE);
   rootlogon();
 
   osc::IOscCalculatorAdjustable* this_calc = NuFitOscCalc(1);
+
+  cout<<this_calc->GetTh13()<<", "<<this_calc->GetTh23()<<endl;
+
   std::vector<const ISyst*> systlist = GetListOfSysts(true, true, 
 						      true, true, true,
 						      false, false,
@@ -155,7 +157,7 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   // std::cout<<fakedata.size()<<std::endl;
   SystShifts fakedatashift(fakedata.at(fakedata.size()-1), 1);
   systlist.insert(systlist.end(), fakedata.end()-1, fakedata.end());
-  for (int i=0; i<systlist.size(); i++) {
+  for (unsigned int i=0; i<systlist.size(); i++) {
     std::cout<<systlist[i]->ShortName()<<std::endl;
   }
   std::cout<<"Loaded "<<systlist.size()<<" systs to make the PredictionInterps of which "<<fitsysts.size()<<" are being fitted"<<std::endl;
@@ -457,6 +459,7 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   TFile *fout = new TFile(outFile, "recreate");
   fout->cd();
 
+  cout<<this_calc->GetTh13()<<", "<<this_calc->GetTh23()<<endl;
   // Build experiments
   std::cout<<"Building SingleSampleExperiments"<<std::endl;
   SingleSampleExperiment nd_lar_fhc(&predNDLArNumuFHC, predNDLArNumuFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_nd));
@@ -487,28 +490,28 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   TH1 *fd_numu_fhc_data = predFDNumuFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_nd).ToTH1(pot_nd);
   fd_numu_fhc_data->SetName("fd_numu_fhc_data");
   fd_numu_fhc_data->Write();
-  TH1 *pre_fd_numu_fhc = GetMCSystTotal(&predFDNumuFHC, this_calc, junk,                   
+  TH1 *pre_fd_numu_fhc = GetMCSystTotal(&predFDNumuFHC, this_calc, junk,               
 					"prefit_fd_nue_fhc", pot_fd);
   pre_fd_numu_fhc->SetTitle(std::to_string(fd_numu_fhc.ChiSq(this_calc, junk)).c_str());
   pre_fd_numu_fhc->Write();
   TH1 *fd_numu_rhc_data = predFDNumuFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_nd).ToTH1(pot_nd);
   fd_numu_rhc_data->SetName("fd_numu_rhc_data");
   fd_numu_rhc_data->Write();
-  TH1 *pre_fd_numu_rhc = GetMCSystTotal(&predFDNumuRHC, this_calc, junk,                   
+  TH1 *pre_fd_numu_rhc = GetMCSystTotal(&predFDNumuRHC, this_calc, junk,                 
 					"prefit_fd_numu_rhc", pot_fd);
   pre_fd_numu_rhc->SetTitle(std::to_string(fd_numu_rhc.ChiSq(this_calc, junk)).c_str());
   pre_fd_numu_rhc->Write();
   TH1 *fd_nue_fhc_data = predFDNueFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_nd).ToTH1(pot_nd);
   fd_nue_fhc_data->SetName("fd_nue_fhc_data");
   fd_nue_fhc_data->Write();
-  TH1 *pre_fd_nue_fhc = GetMCSystTotal(&predFDNueFHC, this_calc, junk,                        
+  TH1 *pre_fd_nue_fhc = GetMCSystTotal(&predFDNueFHC, this_calc, junk,                   
 				       "prefit_fd_nue_fhc", pot_fd);
   pre_fd_nue_fhc->SetTitle(std::to_string(fd_nue_fhc.ChiSq(this_calc, junk)).c_str());
   pre_fd_nue_fhc->Write();
   TH1 *fd_nue_rhc_data = predFDNueFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_nd).ToTH1(pot_nd);
   fd_nue_rhc_data->SetName("fd_nue_rhc_data");
   fd_nue_rhc_data->Write();
-  TH1 *pre_fd_nue_rhc = GetMCSystTotal(&predFDNueRHC, this_calc, junk,                        
+  TH1 *pre_fd_nue_rhc = GetMCSystTotal(&predFDNueRHC, this_calc, junk,                  
 				       "prefit_fd_nue_rhc", pot_fd);
   pre_fd_nue_rhc->SetTitle(std::to_string(fd_nue_rhc.ChiSq(this_calc, junk)).c_str());
   pre_fd_nue_rhc->Write();
@@ -525,6 +528,8 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   nd_fd_expt.Add(&fd_numu_rhc);
   nd_fd_expt.Add(&fd_nue_fhc);
   nd_fd_expt.Add(&fd_nue_rhc);
+
+  cout<<this_calc->GetTh13()<<", "<<this_calc->GetTh23()<<endl;
 
   std::string covFileName = FindCAFAnaDir() + "/Systs/det_sys_cov.root";
   nd_fd_expt.AddCovarianceMatrix(covFileName, "nd_all_frac_cov", true, {0, 1});
@@ -553,6 +558,7 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   std::vector<double> fPostFitValues;
   std::vector<double> fPostFitErrors;
   std::vector<double> fCentralValues;
+  std::vector<double> fTrueValues;
   double fNFCN, fEDM, fChiSq;
   bool fIsValid;
   fd_only_tree->Branch("ParamNames", &fParamNames);
@@ -561,6 +567,7 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   fd_only_tree->Branch("PostFitValues", &fPostFitValues);
   fd_only_tree->Branch("PostFitErrors", &fPostFitErrors);
   fd_only_tree->Branch("CentralValues", &fCentralValues);
+  fd_only_tree->Branch("TrueValues", &fTrueValues);
   fd_only_tree->Branch("NFCN", &fNFCN);
   fd_only_tree->Branch("EDM", &fEDM);
   fd_only_tree->Branch("ChiSq", &fChiSq);
@@ -576,7 +583,18 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   fEDM = fd_only_fit.GetEDM();
   fIsValid = fd_only_fit.GetIsValid();
   fChiSq = fd_only_chisq;
+
+  fTrueValues.resize(fParamNames.size(), 0.);
+  fTrueValues.at(0) = this_calc->GetDmsq32()*1000.;
+  fTrueValues.at(1) = this_calc->GetTh13();
+  fTrueValues.at(2) = TMath::Sin(this_calc->GetTh23())*TMath::Sin(this_calc->GetTh23());
+  fTrueValues.at(3) = this_calc->GetdCP();
+  fTrueValues.at(4) = this_calc->GetRho();
+
+  fd_only_tree->Fill();
   fd_only_tree->Write();
+
+  cout<<this_calc->GetTh13()<<", "<<this_calc->GetTh23()<<endl;
 
   TMatrixDSym *covar = (TMatrixDSym *)fd_only_fit.GetCovariance();
   TH2D hist_covar = TH2D(*covar);
@@ -597,6 +615,7 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   nd_fd_tree->Branch("PostFitValues", &fPostFitValues);
   nd_fd_tree->Branch("PostFitErrors", &fPostFitErrors);
   nd_fd_tree->Branch("CentralValues", &fCentralValues);
+  nd_fd_tree->Branch("TrueValues", &fTrueValues);
   nd_fd_tree->Branch("NFCN", &fNFCN);
   nd_fd_tree->Branch("EDM", &fEDM);
   nd_fd_tree->Branch("ChiSq", &fChiSq);
@@ -612,7 +631,10 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   fEDM = nd_fd_fit.GetEDM();
   fIsValid = nd_fd_fit.GetIsValid();
   fChiSq = nd_fd_chisq;
+  nd_fd_tree->Fill();
   nd_fd_tree->Write();
+
+  cout<<this_calc->GetTh13()<<", "<<this_calc->GetTh23()<<endl;
 
   fout->Close();
   delete fout;
