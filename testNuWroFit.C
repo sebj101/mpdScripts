@@ -130,6 +130,7 @@ std::vector<const IFitVar*> fitVars = {&kFitDmSq32NHScaled, &kFitTheta13, &kFitS
 
 void testNuWroFit(const char* outFile, const char* saveDir, 
 		  bool makeFDInterps=false, bool makeNDInterps=false,
+		  bool makeNDGAr=false,
 		  const char *lardir="/pnfs/dune/persistent/users/picker24/CAFv4/", 
 		  const char *gardir="/dune/data/users/sbjones/gasTpcCAF/v2/")
 {
@@ -137,8 +138,6 @@ void testNuWroFit(const char* outFile, const char* saveDir,
   rootlogon();
 
   osc::IOscCalculatorAdjustable* this_calc = NuFitOscCalc(1);
-
-  cout<<this_calc->GetTh13()<<", "<<this_calc->GetTh23()<<endl;
 
   std::vector<const ISyst*> systlist = GetListOfSysts(true, true, 
 						      true, true, true,
@@ -216,210 +215,329 @@ void testNuWroFit(const char* outFile, const char* saveDir,
     fNDrhc->Close();
     delete fNDrhc;
   }
-    // Loaders loadersGArFHC;
-    // Loaders loadersGArRHC;
-    // SpectrumLoader loaderGArFHC(Form("%s/CAF_FHC.root", gardir), kBeam);
-    // SpectrumLoader loaderGArRHC(Form("%s/CAF_RHC.root", gardir), kBeam);
-    // loadersGArFHC.AddLoader(&loaderGArFHC, caf::kNEARDET, Loaders::kMC);
-    // loadersGArRHC.AddLoader(&loaderGArRHC, caf::kNEARDET, Loaders::kMC);
-    // // Way too many samples but don't want to have to remake then again
-    // NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueFV);
-    // NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueFV);
-    // NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueFV);
-    // NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueFV);
-    // NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV);
-    // NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV);
-    // NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueFV);
-    // NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueFV);
-    // PredictionInterp predNDGArNumuFHC(systlist, this_calc, genNDGArNumuFHC, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC(systlist, this_calc, genNDGArNumuRHC, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHC1d(systlist, this_calc, genNDGArNumuFHC1d, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC1d(systlist, this_calc, genNDGArNumuRHC1d, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCQ2(systlist, this_calc, genNDGArNumuFHCQ2, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCQ2(systlist, this_calc, genNDGArNumuRHCQ2, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCW(systlist, this_calc, genNDGArNumuFHCW, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCW(systlist, this_calc, genNDGArNumuRHCW, loadersGArRHC);
-    // // 0pi
-    // NoOscPredictionGenerator genNDGArNumuFHC_0pi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
-    // NoOscPredictionGenerator genNDGArNumuRHC_0pi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
-    // NoOscPredictionGenerator genNDGArNumuFHC1d_0pi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
-    // NoOscPredictionGenerator genNDGArNumuRHC1d_0pi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
-    // NoOscPredictionGenerator genNDGArNumuFHCQ2_0pi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
-    // NoOscPredictionGenerator genNDGArNumuRHCQ2_0pi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
-    // NoOscPredictionGenerator genNDGArNumuFHCW_0pi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
-    // NoOscPredictionGenerator genNDGArNumuRHCW_0pi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
-    // PredictionInterp predNDGArNumuFHC_0pi(systlist, this_calc, genNDGArNumuFHC_0pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC_0pi(systlist, this_calc, genNDGArNumuRHC_0pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHC1d_0pi(systlist, this_calc, genNDGArNumuFHC1d_0pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC1d_0pi(systlist, this_calc, genNDGArNumuRHC1d_0pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCQ2_0pi(systlist, this_calc, genNDGArNumuFHCQ2_0pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCQ2_0pi(systlist, this_calc, genNDGArNumuRHCQ2_0pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCW_0pi(systlist, this_calc, genNDGArNumuFHCW_0pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCW_0pi(systlist, this_calc, genNDGArNumuRHCW_0pi, loadersGArRHC);
-    // // 1pi
-    // NoOscPredictionGenerator genNDGArNumuFHC_1pi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
-    // NoOscPredictionGenerator genNDGArNumuRHC_1pi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
-    // NoOscPredictionGenerator genNDGArNumuFHC1d_1pi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
-    // NoOscPredictionGenerator genNDGArNumuRHC1d_1pi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
-    // NoOscPredictionGenerator genNDGArNumuFHCQ2_1pi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
-    // NoOscPredictionGenerator genNDGArNumuRHCQ2_1pi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
-    // NoOscPredictionGenerator genNDGArNumuFHCW_1pi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
-    // NoOscPredictionGenerator genNDGArNumuRHCW_1pi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
-    // PredictionInterp predNDGArNumuFHC_1pi(systlist, this_calc, genNDGArNumuFHC_1pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC_1pi(systlist, this_calc, genNDGArNumuRHC_1pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHC1d_1pi(systlist, this_calc, genNDGArNumuFHC1d_1pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC1d_1pi(systlist, this_calc, genNDGArNumuRHC1d_1pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCQ2_1pi(systlist, this_calc, genNDGArNumuFHCQ2_1pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCQ2_1pi(systlist, this_calc, genNDGArNumuRHCQ2_1pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCW_1pi(systlist, this_calc, genNDGArNumuFHCW_1pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCW_1pi(systlist, this_calc, genNDGArNumuRHCW_1pi, loadersGArRHC);
-    // // 2pi
-    // NoOscPredictionGenerator genNDGArNumuFHC_2pi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
-    // NoOscPredictionGenerator genNDGArNumuRHC_2pi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
-    // NoOscPredictionGenerator genNDGArNumuFHC1d_2pi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
-    // NoOscPredictionGenerator genNDGArNumuRHC1d_2pi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
-    // NoOscPredictionGenerator genNDGArNumuFHCQ2_2pi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
-    // NoOscPredictionGenerator genNDGArNumuRHCQ2_2pi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
-    // NoOscPredictionGenerator genNDGArNumuFHCW_2pi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
-    // NoOscPredictionGenerator genNDGArNumuRHCW_2pi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
-    // PredictionInterp predNDGArNumuFHC_2pi(systlist, this_calc, genNDGArNumuFHC_2pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC_2pi(systlist, this_calc, genNDGArNumuRHC_2pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHC1d_2pi(systlist, this_calc, genNDGArNumuFHC1d_2pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC1d_2pi(systlist, this_calc, genNDGArNumuRHC1d_2pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCQ2_2pi(systlist, this_calc, genNDGArNumuFHCQ2_2pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCQ2_2pi(systlist, this_calc, genNDGArNumuRHCQ2_2pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCW_2pi(systlist, this_calc, genNDGArNumuFHCW_2pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCW_2pi(systlist, this_calc, genNDGArNumuRHCW_2pi, loadersGArRHC);
-    // // 3pi
-    // NoOscPredictionGenerator genNDGArNumuFHC_3pi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
-    // NoOscPredictionGenerator genNDGArNumuRHC_3pi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
-    // NoOscPredictionGenerator genNDGArNumuFHC1d_3pi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
-    // NoOscPredictionGenerator genNDGArNumuRHC1d_3pi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
-    // NoOscPredictionGenerator genNDGArNumuFHCQ2_3pi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
-    // NoOscPredictionGenerator genNDGArNumuRHCQ2_3pi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
-    // NoOscPredictionGenerator genNDGArNumuFHCW_3pi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
-    // NoOscPredictionGenerator genNDGArNumuRHCW_3pi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
-    // PredictionInterp predNDGArNumuFHC_3pi(systlist, this_calc, genNDGArNumuFHC_3pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC_3pi(systlist, this_calc, genNDGArNumuRHC_3pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHC1d_3pi(systlist, this_calc, genNDGArNumuFHC1d_3pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC1d_3pi(systlist, this_calc, genNDGArNumuRHC1d_3pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCQ2_3pi(systlist, this_calc, genNDGArNumuFHCQ2_3pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCQ2_3pi(systlist, this_calc, genNDGArNumuRHCQ2_3pi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCW_3pi(systlist, this_calc, genNDGArNumuFHCW_3pi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCW_3pi(systlist, this_calc, genNDGArNumuRHCW_3pi, loadersGArRHC);
-    // // >3pi
-    // NoOscPredictionGenerator genNDGArNumuFHC_hipi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
-    // NoOscPredictionGenerator genNDGArNumuRHC_hipi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
-    // NoOscPredictionGenerator genNDGArNumuFHC1d_hipi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
-    // NoOscPredictionGenerator genNDGArNumuRHC1d_hipi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
-    // NoOscPredictionGenerator genNDGArNumuFHCQ2_hipi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
-    // NoOscPredictionGenerator genNDGArNumuRHCQ2_hipi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
-    // NoOscPredictionGenerator genNDGArNumuFHCW_hipi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
-    // NoOscPredictionGenerator genNDGArNumuRHCW_hipi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
-    // PredictionInterp predNDGArNumuFHC_hipi(systlist, this_calc, genNDGArNumuFHC_hipi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC_hipi(systlist, this_calc, genNDGArNumuRHC_hipi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHC1d_hipi(systlist, this_calc, genNDGArNumuFHC1d_hipi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHC1d_hipi(systlist, this_calc, genNDGArNumuRHC1d_hipi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCQ2_hipi(systlist, this_calc, genNDGArNumuFHCQ2_hipi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCQ2_hipi(systlist, this_calc, genNDGArNumuRHCQ2_hipi, loadersGArRHC);
-    // PredictionInterp predNDGArNumuFHCW_hipi(systlist, this_calc, genNDGArNumuFHCW_hipi, loadersGArFHC);
-    // PredictionInterp predNDGArNumuRHCW_hipi(systlist, this_calc, genNDGArNumuRHCW_hipi, loadersGArRHC);
 
-  //   loadersGArFHC.Go();
-  //   loadersGArRHC.Go();
+  if (makeNDGAr) {
+    Loaders loadersGArFHC;
+    Loaders loadersGArRHC;
+    SpectrumLoader loaderGArFHC(Form("%s/CAF_FHC.root", gardir), kBeam);
+    SpectrumLoader loaderGArRHC(Form("%s/CAF_RHC.root", gardir), kBeam);
+    loadersGArFHC.AddLoader(&loaderGArFHC, caf::kNEARDET, Loaders::kMC);
+    loadersGArRHC.AddLoader(&loaderGArRHC, caf::kNEARDET, Loaders::kMC);
+    // Way too many samples but don't want to have to remake then again
+    NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueFV);
+    NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueFV);
+    NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueFV);
+    NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueFV);
+    NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV);
+    NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV);
+    NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueFV);
+    NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueFV);
+    PredictionInterp predNDGArNumuFHC(systlist, this_calc, genNDGArNumuFHC, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC(systlist, this_calc, genNDGArNumuRHC, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHC1d(systlist, this_calc, genNDGArNumuFHC1d, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC1d(systlist, this_calc, genNDGArNumuRHC1d, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCQ2(systlist, this_calc, genNDGArNumuFHCQ2, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCQ2(systlist, this_calc, genNDGArNumuRHCQ2, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCW(systlist, this_calc, genNDGArNumuFHCW, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCW(systlist, this_calc, genNDGArNumuRHCW, loadersGArRHC);
+    // 0pi
+    NoOscPredictionGenerator genNDGArNumuFHC_0pi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
+    NoOscPredictionGenerator genNDGArNumuRHC_0pi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
+    NoOscPredictionGenerator genNDGArNumuFHC1d_0pi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
+    NoOscPredictionGenerator genNDGArNumuRHC1d_0pi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
+    NoOscPredictionGenerator genNDGArNumuFHCQ2_0pi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
+    NoOscPredictionGenerator genNDGArNumuRHCQ2_0pi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
+    NoOscPredictionGenerator genNDGArNumuFHCW_0pi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
+    NoOscPredictionGenerator genNDGArNumuRHCW_0pi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
+    PredictionInterp predNDGArNumuFHC_0pi(systlist, this_calc, genNDGArNumuFHC_0pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC_0pi(systlist, this_calc, genNDGArNumuRHC_0pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHC1d_0pi(systlist, this_calc, genNDGArNumuFHC1d_0pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC1d_0pi(systlist, this_calc, genNDGArNumuRHC1d_0pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCQ2_0pi(systlist, this_calc, genNDGArNumuFHCQ2_0pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCQ2_0pi(systlist, this_calc, genNDGArNumuRHCQ2_0pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCW_0pi(systlist, this_calc, genNDGArNumuFHCW_0pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCW_0pi(systlist, this_calc, genNDGArNumuRHCW_0pi, loadersGArRHC);
+    // 1pi
+    NoOscPredictionGenerator genNDGArNumuFHC_1pi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
+    NoOscPredictionGenerator genNDGArNumuRHC_1pi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
+    NoOscPredictionGenerator genNDGArNumuFHC1d_1pi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
+    NoOscPredictionGenerator genNDGArNumuRHC1d_1pi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
+    NoOscPredictionGenerator genNDGArNumuFHCQ2_1pi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
+    NoOscPredictionGenerator genNDGArNumuRHCQ2_1pi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
+    NoOscPredictionGenerator genNDGArNumuFHCW_1pi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
+    NoOscPredictionGenerator genNDGArNumuRHCW_1pi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
+    PredictionInterp predNDGArNumuFHC_1pi(systlist, this_calc, genNDGArNumuFHC_1pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC_1pi(systlist, this_calc, genNDGArNumuRHC_1pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHC1d_1pi(systlist, this_calc, genNDGArNumuFHC1d_1pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC1d_1pi(systlist, this_calc, genNDGArNumuRHC1d_1pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCQ2_1pi(systlist, this_calc, genNDGArNumuFHCQ2_1pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCQ2_1pi(systlist, this_calc, genNDGArNumuRHCQ2_1pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCW_1pi(systlist, this_calc, genNDGArNumuFHCW_1pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCW_1pi(systlist, this_calc, genNDGArNumuRHCW_1pi, loadersGArRHC);
+    // 2pi
+    NoOscPredictionGenerator genNDGArNumuFHC_2pi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
+    NoOscPredictionGenerator genNDGArNumuRHC_2pi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
+    NoOscPredictionGenerator genNDGArNumuFHC1d_2pi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
+    NoOscPredictionGenerator genNDGArNumuRHC1d_2pi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
+    NoOscPredictionGenerator genNDGArNumuFHCQ2_2pi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
+    NoOscPredictionGenerator genNDGArNumuRHCQ2_2pi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
+    NoOscPredictionGenerator genNDGArNumuFHCW_2pi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
+    NoOscPredictionGenerator genNDGArNumuRHCW_2pi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
+    PredictionInterp predNDGArNumuFHC_2pi(systlist, this_calc, genNDGArNumuFHC_2pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC_2pi(systlist, this_calc, genNDGArNumuRHC_2pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHC1d_2pi(systlist, this_calc, genNDGArNumuFHC1d_2pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC1d_2pi(systlist, this_calc, genNDGArNumuRHC1d_2pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCQ2_2pi(systlist, this_calc, genNDGArNumuFHCQ2_2pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCQ2_2pi(systlist, this_calc, genNDGArNumuRHCQ2_2pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCW_2pi(systlist, this_calc, genNDGArNumuFHCW_2pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCW_2pi(systlist, this_calc, genNDGArNumuRHCW_2pi, loadersGArRHC);
+    // 3pi
+    NoOscPredictionGenerator genNDGArNumuFHC_3pi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
+    NoOscPredictionGenerator genNDGArNumuRHC_3pi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
+    NoOscPredictionGenerator genNDGArNumuFHC1d_3pi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
+    NoOscPredictionGenerator genNDGArNumuRHC1d_3pi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
+    NoOscPredictionGenerator genNDGArNumuFHCQ2_3pi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
+    NoOscPredictionGenerator genNDGArNumuRHCQ2_3pi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
+    NoOscPredictionGenerator genNDGArNumuFHCW_3pi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
+    NoOscPredictionGenerator genNDGArNumuRHCW_3pi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
+    PredictionInterp predNDGArNumuFHC_3pi(systlist, this_calc, genNDGArNumuFHC_3pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC_3pi(systlist, this_calc, genNDGArNumuRHC_3pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHC1d_3pi(systlist, this_calc, genNDGArNumuFHC1d_3pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC1d_3pi(systlist, this_calc, genNDGArNumuRHC1d_3pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCQ2_3pi(systlist, this_calc, genNDGArNumuFHCQ2_3pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCQ2_3pi(systlist, this_calc, genNDGArNumuRHCQ2_3pi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCW_3pi(systlist, this_calc, genNDGArNumuFHCW_3pi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCW_3pi(systlist, this_calc, genNDGArNumuRHCW_3pi, loadersGArRHC);
+    // >3pi
+    NoOscPredictionGenerator genNDGArNumuFHC_hipi(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
+    NoOscPredictionGenerator genNDGArNumuRHC_hipi(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
+    NoOscPredictionGenerator genNDGArNumuFHC1d_hipi(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
+    NoOscPredictionGenerator genNDGArNumuRHC1d_hipi(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
+    NoOscPredictionGenerator genNDGArNumuFHCQ2_hipi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
+    NoOscPredictionGenerator genNDGArNumuRHCQ2_hipi(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
+    NoOscPredictionGenerator genNDGArNumuFHCW_hipi(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
+    NoOscPredictionGenerator genNDGArNumuRHCW_hipi(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
+    PredictionInterp predNDGArNumuFHC_hipi(systlist, this_calc, genNDGArNumuFHC_hipi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC_hipi(systlist, this_calc, genNDGArNumuRHC_hipi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHC1d_hipi(systlist, this_calc, genNDGArNumuFHC1d_hipi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHC1d_hipi(systlist, this_calc, genNDGArNumuRHC1d_hipi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCQ2_hipi(systlist, this_calc, genNDGArNumuFHCQ2_hipi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCQ2_hipi(systlist, this_calc, genNDGArNumuRHCQ2_hipi, loadersGArRHC);
+    PredictionInterp predNDGArNumuFHCW_hipi(systlist, this_calc, genNDGArNumuFHCW_hipi, loadersGArFHC);
+    PredictionInterp predNDGArNumuRHCW_hipi(systlist, this_calc, genNDGArNumuRHCW_hipi, loadersGArRHC);
 
-  //   predNDGArNumuFHC.SaveTo(stateFile->mkdir("nd_gar_numu_fhc"));
-  //   predNDGArNumuRHC.SaveTo(stateFile->mkdir("nd_gar_numu_rhc"));
-  //   predNDGArNumuFHC1d.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_1d"));
-  //   predNDGArNumuRHC1d.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_1d"));
-  //   predNDGArNumuFHCQ2.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_q2"));
-  //   predNDGArNumuRHCQ2.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_q2"));
-  //   predNDGArNumuFHCW.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_w"));
-  //   predNDGArNumuRHCW.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_w"));
+    loadersGArFHC.Go();
+    loadersGArRHC.Go();
 
-  //   predNDGArNumuFHC_0pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_0pi"));
-  //   predNDGArNumuRHC_0pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_0pi"));
-  //   predNDGArNumuFHC1d_0pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_1d_0pi"));
-  //   predNDGArNumuRHC1d_0pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_1d_0pi"));
-  //   predNDGArNumuFHCQ2_0pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_q2_0pi"));
-  //   predNDGArNumuRHCQ2_0pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_q2_0pi"));
-  //   predNDGArNumuFHCW_0pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_w_0pi"));
-  //   predNDGArNumuRHCW_0pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_w_0pi"));
+    TFile *fNDGArfhcAll = new TFile(Form("%s/state_ND_GAr_FHC_All.root", saveDir), "recreate");
+    predNDGArNumuFHC.SaveTo(fNDGArfhcAll->mkdir("nd_gar_numu_fhc"));
+    predNDGArNumuFHC1d.SaveTo(fNDGArfhcAll->mkdir("nd_gar_numu_fhc_1d"));
+    predNDGArNumuFHCQ2.SaveTo(fNDGArfhcAll->mkdir("nd_gar_numu_fhc_q2"));
+    predNDGArNumuFHCW.SaveTo(fNDGArfhcAll->mkdir("nd_gar_numu_fhc_w"));
+    fNDGArfhcAll->Close();
+    delete fNDGArfhcAll;
+    std::cout<<"Saved GAr FHC inclusive samples"<<std::endl;
+    TFile *fNDGArrhcAll = new TFile(Form("%s/state_ND_GAr_RHC_All.root", saveDir), "recreate");
+    predNDGArNumuRHC.SaveTo(fNDGArrhcAll->mkdir("nd_gar_numu_rhc"));    
+    predNDGArNumuRHC1d.SaveTo(fNDGArrhcAll->mkdir("nd_gar_numu_rhc_1d"));
+    predNDGArNumuRHCQ2.SaveTo(fNDGArrhcAll->mkdir("nd_gar_numu_rhc_q2"));
+    predNDGArNumuRHCW.SaveTo(fNDGArrhcAll->mkdir("nd_gar_numu_rhc_w"));
+    fNDGArrhcAll->Close();
+    delete fNDGArrhcAll;
+    std::cout<<"Saved GAr RHC inclusive samples"<<std::endl;
 
-  //   predNDGArNumuFHC_1pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_1pi"));
-  //   predNDGArNumuRHC_1pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_1pi"));
-  //   predNDGArNumuFHC1d_1pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_1d_1pi"));
-  //   predNDGArNumuRHC1d_1pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_1d_1pi"));
-  //   predNDGArNumuFHCQ2_1pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_q2_1pi"));
-  //   predNDGArNumuRHCQ2_1pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_q2_1pi"));
-  //   predNDGArNumuFHCW_1pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_w_1pi"));
-  //   predNDGArNumuRHCW_1pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_w_1pi"));
+    TFile *fNDGArfhc0pi = new TFile(Form("%s/state_ND_GAr_FHC_0pi.root", saveDir), "recreate");
+    predNDGArNumuFHC_0pi.SaveTo(fNDGArfhc0pi->mkdir("nd_gar_numu_fhc_0pi"));
+    predNDGArNumuFHC1d_0pi.SaveTo(fNDGArfhc0pi->mkdir("nd_gar_numu_fhc_1d_0pi"));
+    predNDGArNumuFHCQ2_0pi.SaveTo(fNDGArfhc0pi->mkdir("nd_gar_numu_fhc_q2_0pi"));
+    predNDGArNumuFHCW_0pi.SaveTo(fNDGArfhc0pi->mkdir("nd_gar_numu_fhc_w_0pi"));
+    fNDGArfhc0pi->Close();
+    delete fNDGArfhc0pi;
+    std::cout<<"Saved GAr FHC 0pi samples"<<std::endl;
+    TFile *fNDGArrhc0pi = new TFile(Form("%s/state_ND_GAr_RHC_0pi.root", saveDir), "recreate");
+    predNDGArNumuRHC_0pi.SaveTo(fNDGArrhc0pi->mkdir("nd_gar_numu_rhc_0pi"));
+    predNDGArNumuRHC1d_0pi.SaveTo(fNDGArrhc0pi->mkdir("nd_gar_numu_rhc_1d_0pi"));
+    predNDGArNumuRHCQ2_0pi.SaveTo(fNDGArrhc0pi->mkdir("nd_gar_numu_rhc_q2_0pi"));
+    predNDGArNumuRHCW_0pi.SaveTo(fNDGArrhc0pi->mkdir("nd_gar_numu_rhc_w_0pi"));
+    fNDGArrhc0pi->Close();
+    delete fNDGArrhc0pi;
+    std::cout<<"Saved GAr RHC 0pi samples"<<std::endl;
 
-  //   predNDGArNumuFHC_2pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_2pi"));
-  //   predNDGArNumuRHC_2pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_2pi"));
-  //   predNDGArNumuFHC1d_2pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_1d_2pi"));
-  //   predNDGArNumuRHC1d_2pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_1d_2pi"));
-  //   predNDGArNumuFHCQ2_2pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_q2_2pi"));
-  //   predNDGArNumuRHCQ2_2pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_q2_2pi"));
-  //   predNDGArNumuFHCW_2pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_w_2pi"));
-  //   predNDGArNumuRHCW_2pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_w_2pi"));
+    TFile *fNDGArfhc1pi = new TFile(Form("%s/state_ND_GAr_FHC_1pi.root", saveDir), "recreate");
+    predNDGArNumuFHC_1pi.SaveTo(fNDGArfhc1pi->mkdir("nd_gar_numu_fhc_1pi"));
+    predNDGArNumuFHC1d_1pi.SaveTo(fNDGArfhc1pi->mkdir("nd_gar_numu_fhc_1d_1pi"));
+    predNDGArNumuFHCQ2_1pi.SaveTo(fNDGArfhc1pi->mkdir("nd_gar_numu_fhc_q2_1pi"));
+    predNDGArNumuFHCW_1pi.SaveTo(fNDGArfhc1pi->mkdir("nd_gar_numu_fhc_w_1pi"));
+    fNDGArfhc1pi->Close();
+    delete fNDGArfhc1pi;
+    std::cout<<"Saved GAr FHC 1pi samples"<<std::endl;
+    TFile *fNDGArrhc1pi = new TFile(Form("%s/state_ND_GAr_RHC_1pi.root", saveDir), "recreate");
+    predNDGArNumuRHC_1pi.SaveTo(fNDGArrhc1pi->mkdir("nd_gar_numu_rhc_1pi"));
+    predNDGArNumuRHC1d_1pi.SaveTo(fNDGArrhc1pi->mkdir("nd_gar_numu_rhc_1d_1pi"));
+    predNDGArNumuRHCQ2_1pi.SaveTo(fNDGArrhc1pi->mkdir("nd_gar_numu_rhc_q2_1pi"));
+    predNDGArNumuRHCW_1pi.SaveTo(fNDGArrhc1pi->mkdir("nd_gar_numu_rhc_w_1pi"));
+    fNDGArrhc1pi->Close();
+    delete fNDGArrhc1pi;
+    std::cout<<"Saved GAr RHC 1pi samples"<<std::endl;
 
-  //   predNDGArNumuFHC_3pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_3pi"));
-  //   predNDGArNumuRHC_3pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_3pi"));
-  //   predNDGArNumuFHC1d_3pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_1d_3pi"));
-  //   predNDGArNumuRHC1d_3pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_1d_3pi"));
-  //   predNDGArNumuFHCQ2_3pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_q2_3pi"));
-  //   predNDGArNumuRHCQ2_3pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_q2_3pi"));
-  //   predNDGArNumuFHCW_3pi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_w_3pi"));
-  //   predNDGArNumuRHCW_3pi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_w_3pi"));
+    TFile *fNDGArfhc2pi = new TFile(Form("%s/state_ND_GAr_FHC_2pi.root", saveDir), "recreate");
+    predNDGArNumuFHC_2pi.SaveTo(fNDGArfhc2pi->mkdir("nd_gar_numu_fhc_2pi"));
+    predNDGArNumuFHC1d_2pi.SaveTo(fNDGArfhc2pi->mkdir("nd_gar_numu_fhc_1d_2pi"));
+    predNDGArNumuFHCQ2_2pi.SaveTo(fNDGArfhc2pi->mkdir("nd_gar_numu_fhc_q2_2pi"));
+    predNDGArNumuFHCW_2pi.SaveTo(fNDGArfhc2pi->mkdir("nd_gar_numu_fhc_w_2pi"));
+    fNDGArfhc2pi->Close();
+    delete fNDGArfhc2pi;
+    std::cout<<"Saved GAr FHC 2pi samples"<<std::endl;
+    TFile *fNDGArrhc2pi = new TFile(Form("%s/state_ND_GAr_RHC_2pi.root", saveDir), "recreate");
+    predNDGArNumuRHC_2pi.SaveTo(fNDGArrhc2pi->mkdir("nd_gar_numu_rhc_2pi"));
+    predNDGArNumuRHC1d_2pi.SaveTo(fNDGArrhc2pi->mkdir("nd_gar_numu_rhc_1d_2pi"));
+    predNDGArNumuRHCQ2_2pi.SaveTo(fNDGArrhc2pi->mkdir("nd_gar_numu_rhc_q2_2pi"));
+    predNDGArNumuRHCW_2pi.SaveTo(fNDGArrhc2pi->mkdir("nd_gar_numu_rhc_w_2pi"));
+    fNDGArrhc2pi->Close();
+    delete fNDGArrhc2pi;
+    std::cout<<"Saved GAr RHC 2pi samples"<<std::endl;
 
-  //   predNDGArNumuFHC_hipi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_4pi"));
-  //   predNDGArNumuRHC_hipi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_4pi"));
-  //   predNDGArNumuFHC1d_hipi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_1d_4pi"));
-  //   predNDGArNumuRHC1d_hipi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_1d_4pi"));
-  //   predNDGArNumuFHCQ2_hipi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_q2_4pi"));
-  //   predNDGArNumuRHCQ2_hipi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_q2_4pi"));
-  //   predNDGArNumuFHCW_hipi.SaveTo(stateFile->mkdir("nd_gar_numu_fhc_w_4pi"));
-  //   predNDGArNumuRHCW_hipi.SaveTo(stateFile->mkdir("nd_gar_numu_rhc_w_4pi"));
-  //   std::cout<<"All PredictionInterps created"<<std::endl;
+    TFile *fNDGArfhc3pi = new TFile(Form("%s/state_ND_GAr_FHC_3pi.root", saveDir), "recreate");
+    predNDGArNumuFHC_3pi.SaveTo(fNDGArfhc3pi->mkdir("nd_gar_numu_fhc_3pi"));
+    predNDGArNumuFHC1d_3pi.SaveTo(fNDGArfhc3pi->mkdir("nd_gar_numu_fhc_1d_3pi"));
+    predNDGArNumuFHCQ2_3pi.SaveTo(fNDGArfhc3pi->mkdir("nd_gar_numu_fhc_q2_3pi"));
+    predNDGArNumuFHCW_3pi.SaveTo(fNDGArfhc3pi->mkdir("nd_gar_numu_fhc_w_3pi"));
+    fNDGArfhc3pi->Close();
+    delete fNDGArfhc3pi;
+    std::cout<<"Saved GAr FHC 3pi samples"<<std::endl;
+    TFile *fNDGArrhc3pi = new TFile(Form("%s/state_ND_GAr_RHC_3pi.root", saveDir), "recreate");
+    predNDGArNumuRHC_3pi.SaveTo(fNDGArrhc3pi->mkdir("nd_gar_numu_rhc_3pi"));
+    predNDGArNumuRHC1d_3pi.SaveTo(fNDGArrhc3pi->mkdir("nd_gar_numu_rhc_1d_3pi"));
+    predNDGArNumuRHCQ2_3pi.SaveTo(fNDGArrhc3pi->mkdir("nd_gar_numu_rhc_q2_3pi"));
+    predNDGArNumuRHCW_3pi.SaveTo(fNDGArrhc3pi->mkdir("nd_gar_numu_rhc_w_3pi"));
+    fNDGArrhc3pi->Close();
+    delete fNDGArrhc3pi;
+    std::cout<<"Saved GAr RHC 3pi samples"<<std::endl;
 
-  // }
+    TFile *fNDGArfhchipi = new TFile(Form("%s/state_ND_GAr_FHC_hipi.root", saveDir), "recreate");
+    predNDGArNumuFHC_hipi.SaveTo(fNDGArfhchipi->mkdir("nd_gar_numu_fhc_hipi"));
+    predNDGArNumuFHC1d_hipi.SaveTo(fNDGArfhchipi->mkdir("nd_gar_numu_fhc_1d_hipi"));
+    predNDGArNumuFHCQ2_hipi.SaveTo(fNDGArfhchipi->mkdir("nd_gar_numu_fhc_q2_hipi"));
+    predNDGArNumuFHCW_hipi.SaveTo(fNDGArfhchipi->mkdir("nd_gar_numu_fhc_w_hipi"));
+    fNDGArfhchipi->Close();
+    delete fNDGArfhchipi;
+    std::cout<<"Saved GAr FHC hipi samples"<<std::endl;
+    TFile *fNDGArrhchipi = new TFile(Form("%s/state_ND_GAr_RHC_hipi.root", saveDir), "recreate");
+    predNDGArNumuRHC_hipi.SaveTo(fNDGArrhchipi->mkdir("nd_gar_numu_rhc_hipi"));
+    predNDGArNumuRHC1d_hipi.SaveTo(fNDGArrhchipi->mkdir("nd_gar_numu_rhc_1d_hipi"));
+    predNDGArNumuRHCQ2_hipi.SaveTo(fNDGArrhchipi->mkdir("nd_gar_numu_rhc_q2_hipi"));
+    predNDGArNumuRHCW_hipi.SaveTo(fNDGArrhchipi->mkdir("nd_gar_numu_rhc_w_hipi"));
+    fNDGArrhchipi->Close();
+    delete fNDGArrhchipi;
+    std::cout<<"Saved GAr RHC hipi samples"<<std::endl;
+    std::cout<<"All GAr PredictionInterps created"<<std::endl;
+  }
+
+
   // Retrieve PredictionInterps
-  // TFile *fPreds = TFile::Open(saveDir, "read");
-  // assert(fPreds && !fPreds->IsZombie());
-  // For ND GAr samples create a vector of the PredictionInterps such that 
-  // the indices increase with pion multiplicity
-  // std::vector<std::unique_ptr<ana::PredictionInterp>> predNDGArNumuFHC;
-  // std::vector<std::unique_ptr<ana::PredictionInterp>> predNDGArNumuRHC;
-  // std::vector<std::unique_ptr<ana::PredictionInterp>> predNDGArNumuFHC1d;
-  // std::vector<std::unique_ptr<ana::PredictionInterp>> predNDGArNumuRHC1d;
-  // std::vector<std::unique_ptr<ana::PredictionInterp>> predNDGArNumuFHCQ2;
-  // std::vector<std::unique_ptr<ana::PredictionInterp>> predNDGArNumuRHCQ2;
-  // std::vector<std::unique_ptr<ana::PredictionInterp>> predNDGArNumuFHCW;
-  // std::vector<std::unique_ptr<ana::PredictionInterp>> predNDGArNumuRHCW;
-  // for (int iPi=0; iPi<5; iPi++) {
-  //   predNDGArNumuFHC.emplace_back(LoadFrom<PredictionInterp>(fPreds->GetDirectory(Form("nd_gar_numu_fhc_%dpi", iPi))));
-  //   predNDGArNumuRHC.emplace_back(LoadFrom<PredictionInterp>(fPreds->GetDirectory(Form("nd_gar_numu_rhc_%dpi", iPi))));
-  //   predNDGArNumuFHC1d.emplace_back(LoadFrom<PredictionInterp>(fPreds->GetDirectory(Form("nd_gar_numu_fhc_1d_%dpi", iPi))));
-  //   predNDGArNumuRHC1d.emplace_back(LoadFrom<PredictionInterp>(fPreds->GetDirectory(Form("nd_gar_numu_rhc_1d_%dpi", iPi))));
-  //   predNDGArNumuFHCQ2.emplace_back(LoadFrom<PredictionInterp>(fPreds->GetDirectory(Form("nd_gar_numu_fhc_q2_%dpi", iPi))));
-  //   predNDGArNumuRHCQ2.emplace_back(LoadFrom<PredictionInterp>(fPreds->GetDirectory(Form("nd_gar_numu_rhc_q2_%dpi", iPi))));
-  //   predNDGArNumuFHCW.emplace_back(LoadFrom<PredictionInterp>(fPreds->GetDirectory(Form("nd_gar_numu_fhc_w_%dpi", iPi))));
-  //   predNDGArNumuRHCW.emplace_back(LoadFrom<PredictionInterp>(fPreds->GetDirectory(Form("nd_gar_numu_rhc_w_%dpi", iPi))));
-  // }
-  // // PredictionInterps with all selected events
-  // PredictionInterp& predNDGArNumuFHCAll   = *ana::LoadFrom<PredictionInterp>(fPreds->GetDirectory("nd_gar_numu_fhc")).release();
-  // PredictionInterp& predNDGArNumuRHCAll   = *ana::LoadFrom<PredictionInterp>(fPreds->GetDirectory("nd_gar_numu_rhc")).release();
-  // PredictionInterp& predNDGArNumuFHC1dAll = *ana::LoadFrom<PredictionInterp>(fPreds->GetDirectory("nd_gar_numu_fhc_1d")).release();
-  // PredictionInterp& predNDGArNumuRHC1dAll = *ana::LoadFrom<PredictionInterp>(fPreds->GetDirectory("nd_gar_numu_rhc_1d")).release();
-  // PredictionInterp& predNDGArNumuFHCQ2All = *ana::LoadFrom<PredictionInterp>(fPreds->GetDirectory("nd_gar_numu_fhc_q2")).release();
-  // PredictionInterp& predNDGArNumuRHCQ2All = *ana::LoadFrom<PredictionInterp>(fPreds->GetDirectory("nd_gar_numu_rhc_q2")).release();
-  // PredictionInterp& predNDGArNumuFHCWAll  = *ana::LoadFrom<PredictionInterp>(fPreds->GetDirectory("nd_gar_numu_fhc_w")).release();
-  // PredictionInterp& predNDGArNumuRHCWAll  = *ana::LoadFrom<PredictionInterp>(fPreds->GetDirectory("nd_gar_numu_rhc_w")).release();
-  // std::cout<<"Loaded GAr samples"<<std::endl;
+  TFile *fNDGArfhcAll = TFile::Open(Form("%s/state_ND_GAr_FHC_All.root", saveDir), "read");
+  assert(fNDGArfhcAll);
+  PredictionInterp& predNDGArNumuFHC = *ana::LoadFrom<PredictionInterp>(fNDGArfhcAll->GetDirectory("nd_gar_numu_fhc")).release();
+  PredictionInterp& predNDGArNumuFHC1d = *ana::LoadFrom<PredictionInterp>(fNDGArfhcAll->GetDirectory("nd_gar_numu_fhc_1d_0pi")).release();
+  PredictionInterp& predNDGArNumuFHCQ2 = *ana::LoadFrom<PredictionInterp>(fNDGArfhcAll->GetDirectory("nd_gar_numu_fhc_q2")).release();
+  PredictionInterp& predNDGArNumuFHCW = *ana::LoadFrom<PredictionInterp>(fNDGArfhcAll->GetDirectory("nd_gar_numu_fhc_w")).release();
+  fNDGArfhcAll->Close();
+  std::cout<<"Loaded GAr FHC inclusive samples"<<std::endl;
+  TFile *fNDGArrhcAll = TFile::Open(Form("%s/state_ND_GAr_RHC_All.root", saveDir), "read");
+  assert(fNDGArrhcAll);
+  PredictionInterp& predNDGArNumuRHC = *ana::LoadFrom<PredictionInterp>(fNDGArrhcAll->GetDirectory("nd_gar_numu_rhc")).release();
+  PredictionInterp& predNDGArNumuRHC1d = *ana::LoadFrom<PredictionInterp>(fNDGArrhcAll->GetDirectory("nd_gar_numu_rhc_1d")).release();
+  PredictionInterp& predNDGArNumuRHCQ2 = *ana::LoadFrom<PredictionInterp>(fNDGArrhcAll->GetDirectory("nd_gar_numu_rhc_q2")).release();
+  PredictionInterp& predNDGArNumuRHCW = *ana::LoadFrom<PredictionInterp>(fNDGArrhcAll->GetDirectory("nd_gar_numu_rhc_w")).release();
+  fNDGArrhcAll->Close();
+  std::cout<<"Loaded GAr RHC inclusive samples"<<std::endl;
+
+  TFile *fNDGArfhc0pi = TFile::Open(Form("%s/state_ND_GAr_FHC_0pi.root", saveDir), "read");
+  assert(fNDGArfhc0pi);
+  PredictionInterp& predNDGArNumuFHC_0pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc0pi->GetDirectory("nd_gar_numu_fhc_0pi")).release();
+  PredictionInterp& predNDGArNumuFHC1d_0pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc0pi->GetDirectory("nd_gar_numu_fhc_1d_0pi")).release();
+  PredictionInterp& predNDGArNumuFHCQ2_0pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc0pi->GetDirectory("nd_gar_numu_fhc_q2_0pi")).release();
+  PredictionInterp& predNDGArNumuFHCW_0pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc0pi->GetDirectory("nd_gar_numu_fhc_w_0pi")).release();
+  fNDGArfhc0pi->Close();
+  std::cout<<"Loaded GAr FHC 0pi samples"<<std::endl;
+  TFile *fNDGArrhc0pi = TFile::Open(Form("%s/state_ND_GAr_RHC_0pi.root", saveDir), "read");
+  assert(fNDGArrhc0pi);
+  PredictionInterp& predNDGArNumuRHC_0pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc0pi->GetDirectory("nd_gar_numu_rhc_0pi")).release();
+  PredictionInterp& predNDGArNumuRHC1d_0pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc0pi->GetDirectory("nd_gar_numu_rhc_1d_0pi")).release();
+  PredictionInterp& predNDGArNumuRHCQ2_0pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc0pi->GetDirectory("nd_gar_numu_rhc_q2_0pi")).release();
+  PredictionInterp& predNDGArNumuRHCW_0pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc0pi->GetDirectory("nd_gar_numu_rhc_w_0pi")).release();
+  fNDGArrhc0pi->Close();
+  std::cout<<"Loaded GAr RHC 0pi samples"<<std::endl;
+
+  TFile *fNDGArfhc1pi = TFile::Open(Form("%s/state_ND_GAr_FHC_1pi.root", saveDir), "read");
+  assert(fNDGArfhc1pi);
+  PredictionInterp& predNDGArNumuFHC_1pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc1pi->GetDirectory("nd_gar_numu_fhc_1pi")).release();
+  PredictionInterp& predNDGArNumuFHC1d_1pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc1pi->GetDirectory("nd_gar_numu_fhc_1d_1pi")).release();
+  PredictionInterp& predNDGArNumuFHCQ2_1pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc1pi->GetDirectory("nd_gar_numu_fhc_q2_1pi")).release();
+  PredictionInterp& predNDGArNumuFHCW_1pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc1pi->GetDirectory("nd_gar_numu_fhc_w_1pi")).release();
+  fNDGArfhc1pi->Close();
+  std::cout<<"Loaded GAr FHC 1pi samples"<<std::endl;
+  TFile *fNDGArrhc1pi = TFile::Open(Form("%s/state_ND_GAr_RHC_1pi.root", saveDir), "read");
+  assert(fNDGArrhc1pi);
+  PredictionInterp& predNDGArNumuRHC_1pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc1pi->GetDirectory("nd_gar_numu_rhc_1pi")).release();
+  PredictionInterp& predNDGArNumuRHC1d_1pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc1pi->GetDirectory("nd_gar_numu_rhc_1d_1pi")).release();
+  PredictionInterp& predNDGArNumuRHCQ2_1pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc1pi->GetDirectory("nd_gar_numu_rhc_q2_1pi")).release();
+  PredictionInterp& predNDGArNumuRHCW_1pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc1pi->GetDirectory("nd_gar_numu_rhc_w_1pi")).release();
+  fNDGArrhc1pi->Close();
+  std::cout<<"Loaded GAr RHC 1pi samples"<<std::endl;
+
+  TFile *fNDGArfhc2pi = TFile::Open(Form("%s/state_ND_GAr_FHC_2pi.root", saveDir), "read");
+  assert(fNDGArfhc2pi);
+  PredictionInterp& predNDGArNumuFHC_2pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc2pi->GetDirectory("nd_gar_numu_fhc_2pi")).release();
+  PredictionInterp& predNDGArNumuFHC1d_2pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc2pi->GetDirectory("nd_gar_numu_fhc_1d_2pi")).release();
+  PredictionInterp& predNDGArNumuFHCQ2_2pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc2pi->GetDirectory("nd_gar_numu_fhc_q2_2pi")).release();
+  PredictionInterp& predNDGArNumuFHCW_2pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc2pi->GetDirectory("nd_gar_numu_fhc_w_2pi")).release();
+  fNDGArfhc2pi->Close();
+  std::cout<<"Loaded GAr FHC 2pi samples"<<std::endl;
+  TFile *fNDGArrhc2pi = TFile::Open(Form("%s/state_ND_GAr_RHC_2pi.root", saveDir), "read");
+  assert(fNDGArrhc2pi);
+  PredictionInterp& predNDGArNumuRHC_2pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc2pi->GetDirectory("nd_gar_numu_rhc_2pi")).release();
+  PredictionInterp& predNDGArNumuRHC1d_2pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc2pi->GetDirectory("nd_gar_numu_rhc_1d_2pi")).release();
+  PredictionInterp& predNDGArNumuRHCQ2_2pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc2pi->GetDirectory("nd_gar_numu_rhc_q2_2pi")).release();
+  PredictionInterp& predNDGArNumuRHCW_2pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc2pi->GetDirectory("nd_gar_numu_rhc_w_2pi")).release();
+  fNDGArrhc2pi->Close();
+  std::cout<<"Loaded GAr RHC 2pi samples"<<std::endl;
+
+  TFile *fNDGArfhc3pi = TFile::Open(Form("%s/state_ND_GAr_FHC_3pi.root", saveDir), "read");
+  assert(fNDGArfhc3pi);
+  PredictionInterp& predNDGArNumuFHC_3pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc3pi->GetDirectory("nd_gar_numu_fhc_3pi")).release();
+  PredictionInterp& predNDGArNumuFHC1d_3pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc3pi->GetDirectory("nd_gar_numu_fhc_1d_3pi")).release();
+  PredictionInterp& predNDGArNumuFHCQ2_3pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc3pi->GetDirectory("nd_gar_numu_fhc_q2_3pi")).release();
+  PredictionInterp& predNDGArNumuFHCW_3pi = *ana::LoadFrom<PredictionInterp>(fNDGArfhc3pi->GetDirectory("nd_gar_numu_fhc_w_3pi")).release();
+  fNDGArfhc3pi->Close();
+  std::cout<<"Loaded GAr FHC 3pi samples"<<std::endl;
+  TFile *fNDGArrhc3pi = TFile::Open(Form("%s/state_ND_GAr_RHC_3pi.root", saveDir), "read");
+  assert(fNDGArrhc3pi);
+  PredictionInterp& predNDGArNumuRHC_3pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc3pi->GetDirectory("nd_gar_numu_rhc_3pi")).release();
+  PredictionInterp& predNDGArNumuRHC1d_3pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc3pi->GetDirectory("nd_gar_numu_rhc_1d_3pi")).release();
+  PredictionInterp& predNDGArNumuRHCQ2_3pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc3pi->GetDirectory("nd_gar_numu_rhc_q2_3pi")).release();
+  PredictionInterp& predNDGArNumuRHCW_3pi = *ana::LoadFrom<PredictionInterp>(fNDGArrhc3pi->GetDirectory("nd_gar_numu_rhc_w_3pi")).release();
+  fNDGArrhc3pi->Close();
+  std::cout<<"Loaded GAr RHC 3pi samples"<<std::endl;
+
+  TFile *fNDGArfhchipi = TFile::Open(Form("%s/state_ND_GAr_FHC_hipi.root", saveDir), "read");
+  assert(fNDGArfhchipi);
+  PredictionInterp& predNDGArNumuFHC_hipi = *ana::LoadFrom<PredictionInterp>(fNDGArfhchipi->GetDirectory("nd_gar_numu_fhc_hipi")).release();
+  PredictionInterp& predNDGArNumuFHC1d_hipi = *ana::LoadFrom<PredictionInterp>(fNDGArfhchipi->GetDirectory("nd_gar_numu_fhc_1d_hipi")).release();
+  PredictionInterp& predNDGArNumuFHCQ2_hipi = *ana::LoadFrom<PredictionInterp>(fNDGArfhchipi->GetDirectory("nd_gar_numu_fhc_q2_hipi")).release();
+  PredictionInterp& predNDGArNumuFHCW_hipi = *ana::LoadFrom<PredictionInterp>(fNDGArfhchipi->GetDirectory("nd_gar_numu_fhc_w_hipi")).release();
+  fNDGArfhchipi->Close();
+  std::cout<<"Loaded GAr FHC hipi samples"<<std::endl;
+  TFile *fNDGArrhchipi = TFile::Open(Form("%s/state_ND_GAr_RHC_hipi.root", saveDir), "read");
+  assert(fNDGArrhchipi);
+  PredictionInterp& predNDGArNumuRHC_hipi = *ana::LoadFrom<PredictionInterp>(fNDGArrhchipi->GetDirectory("nd_gar_numu_rhc_hipi")).release();
+  PredictionInterp& predNDGArNumuRHC1d_hipi = *ana::LoadFrom<PredictionInterp>(fNDGArrhchipi->GetDirectory("nd_gar_numu_rhc_1d_hipi")).release();
+  PredictionInterp& predNDGArNumuRHCQ2_hipi = *ana::LoadFrom<PredictionInterp>(fNDGArrhchipi->GetDirectory("nd_gar_numu_rhc_q2_hipi")).release();
+  PredictionInterp& predNDGArNumuRHCW_hipi = *ana::LoadFrom<PredictionInterp>(fNDGArrhchipi->GetDirectory("nd_gar_numu_rhc_w_hipi")).release();
+  fNDGArrhchipi->Close();
+  std::cout<<"Loaded GAr RHC hipi samples"<<std::endl;
 
   // Get the readymade PredictionInterps for the LAr samples
-
   // Put the LAr samples in a vector 
   // Order is 0=nd numu fhc, 1=fd numu fhc, 2=fd nue fhc
   // 3=nd numu rhc, 4=fd numu rhc, 5=fd nue rhc
@@ -487,28 +605,28 @@ void testNuWroFit(const char* outFile, const char* saveDir,
 				       "prefit_nd_lar_rhc", pot_fd);
   pre_nd_lar_rhc->SetTitle(std::to_string(nd_lar_rhc.ChiSq(this_calc, junk)).c_str());
   pre_nd_lar_rhc->Write();
-  TH1 *fd_numu_fhc_data = predFDNumuFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *fd_numu_fhc_data = predFDNumuFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_fd).ToTH1(pot_fd);
   fd_numu_fhc_data->SetName("fd_numu_fhc_data");
   fd_numu_fhc_data->Write();
   TH1 *pre_fd_numu_fhc = GetMCSystTotal(&predFDNumuFHC, this_calc, junk,               
 					"prefit_fd_nue_fhc", pot_fd);
   pre_fd_numu_fhc->SetTitle(std::to_string(fd_numu_fhc.ChiSq(this_calc, junk)).c_str());
   pre_fd_numu_fhc->Write();
-  TH1 *fd_numu_rhc_data = predFDNumuFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *fd_numu_rhc_data = predFDNumuFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_fd).ToTH1(pot_fd);
   fd_numu_rhc_data->SetName("fd_numu_rhc_data");
   fd_numu_rhc_data->Write();
   TH1 *pre_fd_numu_rhc = GetMCSystTotal(&predFDNumuRHC, this_calc, junk,                 
 					"prefit_fd_numu_rhc", pot_fd);
   pre_fd_numu_rhc->SetTitle(std::to_string(fd_numu_rhc.ChiSq(this_calc, junk)).c_str());
   pre_fd_numu_rhc->Write();
-  TH1 *fd_nue_fhc_data = predFDNueFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *fd_nue_fhc_data = predFDNueFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_fd).ToTH1(pot_fd);
   fd_nue_fhc_data->SetName("fd_nue_fhc_data");
   fd_nue_fhc_data->Write();
   TH1 *pre_fd_nue_fhc = GetMCSystTotal(&predFDNueFHC, this_calc, junk,                   
 				       "prefit_fd_nue_fhc", pot_fd);
   pre_fd_nue_fhc->SetTitle(std::to_string(fd_nue_fhc.ChiSq(this_calc, junk)).c_str());
   pre_fd_nue_fhc->Write();
-  TH1 *fd_nue_rhc_data = predFDNueFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *fd_nue_rhc_data = predFDNueFHC.PredictSyst(this_calc, SystShifts(fakedata.at(fakedata.size()-1), 1)).FakeData(pot_fd).ToTH1(pot_fd);
   fd_nue_rhc_data->SetName("fd_nue_rhc_data");
   fd_nue_rhc_data->Write();
   TH1 *pre_fd_nue_rhc = GetMCSystTotal(&predFDNueRHC, this_calc, junk,                  
