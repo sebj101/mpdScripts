@@ -107,9 +107,9 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
   // CV weighting
   //const Var kGENIEWeights = SIMPLEVAR(dune.total_xsSyst_cv_wgt);
 
-  std::vector<double> binEEdges = {0., 0.75, 1.25, 1.5, 1.75, 
+  std::vector<double> binEEdges = {0., 0.5, 1., 1.25, 1.5, 1.75,
 				   2., 2.25, 2.5, 2.75, 
-				   3., 3.25, 3.5, 3.75,
+				   3., 3.25, 3.5, 3.75, 
 				   4., 5., 6., 10.};
   std::vector<double> binYEdges = {0, 0.1, 0.2, 0.3, 0.4, 0.6, 1.0};
   const Binning binsEreco  = Binning::Custom(binEEdges);
@@ -740,7 +740,63 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
     hQ2LArCC2Pi->Write("hQ2LArCC2PiRatio");
     hQ2LArCC3Pi->Write("hQ2LArCC3PiRatio");
     hQ2LArCCHiPi->Write("hQ2LArCCHiPiRatio");
+
+    // FD plots
+    TH1 *hNumuFHCreco = predNumuFHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
+    setHistAttr(hNumuFHCreco);
+    TH1 *hNumuRHCreco = predNumuRHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
+    setHistAttr(hNumuRHCreco);
+    TH1 *hNueFHCreco = predNueFHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
+    setHistAttr(hNueFHCreco);
+    TH1 *hNueRHCreco = predNueRHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
+    setHistAttr(hNueRHCreco);
+    hNumuFHCreco->Write("hNumuFHCreco");
+    hNumuRHCreco->Write("hNumuRHCreco");
+    hNueFHCreco->Write("hNueFHCreco");
+    hNueRHCreco->Write("hNueRHCreco");
+    // NuWro
+    TH1 *hNumuFHCrecoNuwro = predNumuFHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
+    setHistAttr(hNumuFHCrecoNuwro);
+    TH1 *hNumuRHCrecoNuwro = predNumuRHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
+    setHistAttr(hNumuRHCrecoNuwro);
+    TH1 *hNueFHCrecoNuwro = predNueFHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
+    setHistAttr(hNueFHCrecoNuwro);
+    TH1 *hNueRHCrecoNuwro = predNueRHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
+    setHistAttr(hNueRHCrecoNuwro);
+    hNumuFHCrecoNuwro->Write("hNumuFHCrecoNuwro");
+    hNumuRHCrecoNuwro->Write("hNumuRHCrecoNuwro");
+    hNueFHCrecoNuwro->Write("hNueFHCrecoNuwro");
+    hNueRHCrecoNuwro->Write("hNueRHCrecoNuwro");
+    hNumuFHCrecoNuwro->SetLineColor(kRed);
+    hNumuRHCrecoNuwro->SetLineColor(kRed);
+    hNueFHCrecoNuwro->SetLineColor(kRed);
+    hNueRHCrecoNuwro->SetLineColor(kRed);
+    THStack *hsNumuFHCreco = new THStack("hsNumuFHCreco", "#nu_{#mu} FHC; E_{#nu, reco} (GeV); Events / GeV");
+    hNumuFHCreco->Scale(1.,"width");
+    hNumuFHCrecoNuwro->Scale(1.,"width");
+    hsNumuFHCreco->Add(hNumuFHCreco);
+    hsNumuFHCreco->Add(hNumuFHCrecoNuwro);
+    hsNumuFHCreco->Write();
+    THStack *hsNumuRHCreco = new THStack("hsNumuRHCreco", "#nu_{#mu} RHC; E_{#nu, reco} (GeV); Events / GeV");
+    hNumuRHCreco->Scale(1.,"width");
+    hNumuRHCrecoNuwro->Scale(1.,"width");
+    hsNumuRHCreco->Add(hNumuRHCreco);
+    hsNumuRHCreco->Add(hNumuRHCrecoNuwro);
+    hsNumuRHCreco->Write();
+    THStack *hsNueFHCreco = new THStack("hsNueFHCreco", "#nu_{e} FHC; E_{#nu, reco} (GeV); Events / GeV");
+    hNueFHCreco->Scale(1.,"width");
+    hNueFHCrecoNuwro->Scale(1.,"width");
+    hsNueFHCreco->Add(hNueFHCreco);
+    hsNueFHCreco->Add(hNueFHCrecoNuwro);
+    hsNueFHCreco->Write();
+    THStack *hsNueRHCreco = new THStack("hsNueRHCreco", "#nu_{e} RHC; E_{#nu, reco} (GeV); Events / GeV");
+    hNueRHCreco->Scale(1.,"width");
+    hNueRHCrecoNuwro->Scale(1.,"width");
+    hsNueRHCreco->Add(hNueRHCreco);
+    hsNueRHCreco->Add(hNueRHCrecoNuwro);
+    hsNueRHCreco->Write();
   }
+
   // GAr FHC
   TH2 *h2GAr           = predGAr.Predict(0).ToTH2(pot_nd);
   setHistAttr(h2GAr); 
