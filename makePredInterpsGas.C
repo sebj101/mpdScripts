@@ -111,14 +111,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
 
   if (multi == -1) { // Inclusive sample
     if (isFHC) {
-      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueFV);
-      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueFV);
-      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV);
-      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueFV);
-      PredictionInterp predNDGArNumuFHC(systlist, this_calc, genNDGArNumuFHC, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHC1d(systlist, this_calc, genNDGArNumuFHC1d, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCQ2(systlist, this_calc, genNDGArNumuFHCQ2, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCW(systlist, this_calc, genNDGArNumuFHCW, loadersGArFHC);
+      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueGasFV);
+      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueGasFV);
+      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV);
+      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV);
+      PredictionInterp predNDGArNumuFHC(systlist, 0, genNDGArNumuFHC, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHC1d(systlist, 0, genNDGArNumuFHC1d, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCQ2(systlist, 0, genNDGArNumuFHCQ2, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCW(systlist, 0, genNDGArNumuFHCW, loadersGArFHC);
       loadersGArFHC.Go();
       TFile *fNDGArfhc = new TFile(Form("%s/state_ND_GAr_FHC_All.root", outDir), "recreate");
       predNDGArNumuFHC.SaveTo(fNDGArfhc->mkdir("nd_gar_numu_fhc"));
@@ -130,14 +130,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
       std::cout<<"Saved GAr FHC inclusive samples"<<std::endl;
     }
     else {
-      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueFV);
-      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueFV);
-      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV);
-      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueFV);
-      PredictionInterp predNDGArNumuRHC(systlist, this_calc, genNDGArNumuRHC, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHC1d(systlist, this_calc, genNDGArNumuRHC1d, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCQ2(systlist, this_calc, genNDGArNumuRHCQ2, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCW(systlist, this_calc, genNDGArNumuRHCW, loadersGArRHC);
+      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueGasFV);
+      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueGasFV);
+      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV);
+      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV);
+      PredictionInterp predNDGArNumuRHC(systlist, 0, genNDGArNumuRHC, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHC1d(systlist, 0, genNDGArNumuRHC1d, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCQ2(systlist, 0, genNDGArNumuRHCQ2, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCW(systlist, 0, genNDGArNumuRHCW, loadersGArRHC);
       loadersGArRHC.Go();
       TFile *fNDGArrhc = new TFile(Form("%s/state_ND_GAr_RHC_All.root", outDir), "recreate");
       predNDGArNumuRHC.SaveTo(fNDGArrhc->mkdir("nd_gar_numu_rhc"));    
@@ -151,14 +151,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
   }
   else if (multi==0) {
     if (isFHC) {
-      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
-      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
-      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
-      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==0);
-      PredictionInterp predNDGArNumuFHC(systlist, this_calc, genNDGArNumuFHC, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHC1d(systlist, this_calc, genNDGArNumuFHC1d, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCQ2(systlist, this_calc, genNDGArNumuFHCQ2, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCW(systlist, this_calc, genNDGArNumuFHCW, loadersGArFHC);
+      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+      PredictionInterp predNDGArNumuFHC(systlist, 0, genNDGArNumuFHC, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHC1d(systlist, 0, genNDGArNumuFHC1d, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCQ2(systlist, 0, genNDGArNumuFHCQ2, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCW(systlist, 0, genNDGArNumuFHCW, loadersGArFHC);
       loadersGArFHC.Go();
       TFile *fNDGArfhc = new TFile(Form("%s/state_ND_GAr_FHC_0pi.root", outDir), "recreate");
       predNDGArNumuFHC.SaveTo(fNDGArfhc->mkdir("nd_gar_numu_fhc"));
@@ -170,14 +170,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
       std::cout<<"Saved GAr FHC inclusive samples"<<std::endl;
     }
     else {
-      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
-      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
-      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
-      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==0);
-      PredictionInterp predNDGArNumuRHC(systlist, this_calc, genNDGArNumuRHC, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHC1d(systlist, this_calc, genNDGArNumuRHC1d, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCQ2(systlist, this_calc, genNDGArNumuRHCQ2, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCW(systlist, this_calc, genNDGArNumuRHCW, loadersGArRHC);
+      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+      PredictionInterp predNDGArNumuRHC(systlist, 0, genNDGArNumuRHC, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHC1d(systlist, 0, genNDGArNumuRHC1d, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCQ2(systlist, 0, genNDGArNumuRHCQ2, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCW(systlist, 0, genNDGArNumuRHCW, loadersGArRHC);
       loadersGArRHC.Go();
       TFile *fNDGArrhc = new TFile(Form("%s/state_ND_GAr_RHC_0pi.root", outDir), "recreate");
       predNDGArNumuRHC.SaveTo(fNDGArrhc->mkdir("nd_gar_numu_rhc"));    
@@ -191,14 +191,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
   }
   else if (multi==1) {
     if (isFHC) {
-      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
-      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
-      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
-      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==1);
-      PredictionInterp predNDGArNumuFHC(systlist, this_calc, genNDGArNumuFHC, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHC1d(systlist, this_calc, genNDGArNumuFHC1d, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCQ2(systlist, this_calc, genNDGArNumuFHCQ2, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCW(systlist, this_calc, genNDGArNumuFHCW, loadersGArFHC);
+      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+      PredictionInterp predNDGArNumuFHC(systlist, 0, genNDGArNumuFHC, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHC1d(systlist, 0, genNDGArNumuFHC1d, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCQ2(systlist, 0, genNDGArNumuFHCQ2, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCW(systlist, 0, genNDGArNumuFHCW, loadersGArFHC);
       loadersGArFHC.Go();
       TFile *fNDGArfhc = new TFile(Form("%s/state_ND_GAr_FHC_1pi.root", outDir), "recreate");
       predNDGArNumuFHC.SaveTo(fNDGArfhc->mkdir("nd_gar_numu_fhc"));
@@ -210,14 +210,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
       std::cout<<"Saved GAr FHC inclusive samples"<<std::endl;
     }
     else {
-      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
-      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
-      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
-      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==1);
-      PredictionInterp predNDGArNumuRHC(systlist, this_calc, genNDGArNumuRHC, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHC1d(systlist, this_calc, genNDGArNumuRHC1d, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCQ2(systlist, this_calc, genNDGArNumuRHCQ2, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCW(systlist, this_calc, genNDGArNumuRHCW, loadersGArRHC);
+      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+      PredictionInterp predNDGArNumuRHC(systlist, 0, genNDGArNumuRHC, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHC1d(systlist, 0, genNDGArNumuRHC1d, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCQ2(systlist, 0, genNDGArNumuRHCQ2, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCW(systlist, 0, genNDGArNumuRHCW, loadersGArRHC);
       loadersGArRHC.Go();
       TFile *fNDGArrhc = new TFile(Form("%s/state_ND_GAr_RHC_1pi.root", outDir), "recreate");
       predNDGArNumuRHC.SaveTo(fNDGArrhc->mkdir("nd_gar_numu_rhc"));    
@@ -231,14 +231,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
   }
   else if (multi==2) {
     if (isFHC) {
-      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
-      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
-      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
-      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==2);
-      PredictionInterp predNDGArNumuFHC(systlist, this_calc, genNDGArNumuFHC, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHC1d(systlist, this_calc, genNDGArNumuFHC1d, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCQ2(systlist, this_calc, genNDGArNumuFHCQ2, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCW(systlist, this_calc, genNDGArNumuFHCW, loadersGArFHC);
+      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+      PredictionInterp predNDGArNumuFHC(systlist, 0, genNDGArNumuFHC, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHC1d(systlist, 0, genNDGArNumuFHC1d, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCQ2(systlist, 0, genNDGArNumuFHCQ2, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCW(systlist, 0, genNDGArNumuFHCW, loadersGArFHC);
       loadersGArFHC.Go();
       TFile *fNDGArfhc = new TFile(Form("%s/state_ND_GAr_FHC_2pi.root", outDir), "recreate");
       predNDGArNumuFHC.SaveTo(fNDGArfhc->mkdir("nd_gar_numu_fhc"));
@@ -250,14 +250,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
       std::cout<<"Saved GAr FHC inclusive samples"<<std::endl;
     }
     else {
-      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
-      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
-      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
-      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==2);
-      PredictionInterp predNDGArNumuRHC(systlist, this_calc, genNDGArNumuRHC, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHC1d(systlist, this_calc, genNDGArNumuRHC1d, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCQ2(systlist, this_calc, genNDGArNumuRHCQ2, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCW(systlist, this_calc, genNDGArNumuRHCW, loadersGArRHC);
+      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+      PredictionInterp predNDGArNumuRHC(systlist, 0, genNDGArNumuRHC, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHC1d(systlist, 0, genNDGArNumuRHC1d, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCQ2(systlist, 0, genNDGArNumuRHCQ2, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCW(systlist, 0, genNDGArNumuRHCW, loadersGArRHC);
       loadersGArRHC.Go();
       TFile *fNDGArrhc = new TFile(Form("%s/state_ND_GAr_RHC_2pi.root", outDir), "recreate");
       predNDGArNumuRHC.SaveTo(fNDGArrhc->mkdir("nd_gar_numu_rhc"));    
@@ -271,14 +271,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
   }
   else if (multi==3) {
     if (isFHC) {
-      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
-      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
-      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
-      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi==3);
-      PredictionInterp predNDGArNumuFHC(systlist, this_calc, genNDGArNumuFHC, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHC1d(systlist, this_calc, genNDGArNumuFHC1d, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCQ2(systlist, this_calc, genNDGArNumuFHCQ2, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCW(systlist, this_calc, genNDGArNumuFHCW, loadersGArFHC);
+      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+      PredictionInterp predNDGArNumuFHC(systlist, 0, genNDGArNumuFHC, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHC1d(systlist, 0, genNDGArNumuFHC1d, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCQ2(systlist, 0, genNDGArNumuFHCQ2, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCW(systlist, 0, genNDGArNumuFHCW, loadersGArFHC);
       loadersGArFHC.Go();
       TFile *fNDGArfhc = new TFile(Form("%s/state_ND_GAr_FHC_3pi.root", outDir), "recreate");
       predNDGArNumuFHC.SaveTo(fNDGArfhc->mkdir("nd_gar_numu_fhc"));
@@ -290,14 +290,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
       std::cout<<"Saved GAr FHC inclusive samples"<<std::endl;
     }
     else {
-      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
-      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
-      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
-      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi==3);
-      PredictionInterp predNDGArNumuRHC(systlist, this_calc, genNDGArNumuRHC, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHC1d(systlist, this_calc, genNDGArNumuRHC1d, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCQ2(systlist, this_calc, genNDGArNumuRHCQ2, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCW(systlist, this_calc, genNDGArNumuRHCW, loadersGArRHC);
+      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+      PredictionInterp predNDGArNumuRHC(systlist, 0, genNDGArNumuRHC, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHC1d(systlist, 0, genNDGArNumuRHC1d, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCQ2(systlist, 0, genNDGArNumuRHCQ2, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCW(systlist, 0, genNDGArNumuRHCW, loadersGArRHC);
       loadersGArRHC.Go();
       TFile *fNDGArrhc = new TFile(Form("%s/state_ND_GAr_RHC_3pi.root", outDir), "recreate");
       predNDGArNumuRHC.SaveTo(fNDGArrhc->mkdir("nd_gar_numu_rhc"));    
@@ -311,14 +311,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
   }
   else if (multi==4) {
     if (isFHC) {
-      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
-      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
-      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
-      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueFV && kRecoPi>3);
-      PredictionInterp predNDGArNumuFHC(systlist, this_calc, genNDGArNumuFHC, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHC1d(systlist, this_calc, genNDGArNumuFHC1d, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCQ2(systlist, this_calc, genNDGArNumuFHCQ2, loadersGArFHC);
-      PredictionInterp predNDGArNumuFHCW(systlist, this_calc, genNDGArNumuFHCW, loadersGArFHC);
+      NoOscPredictionGenerator genNDGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+      NoOscPredictionGenerator genNDGArNumuFHC1d(axND1d, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+      NoOscPredictionGenerator genNDGArNumuFHCQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+      NoOscPredictionGenerator genNDGArNumuFHCW(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+      PredictionInterp predNDGArNumuFHC(systlist, 0, genNDGArNumuFHC, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHC1d(systlist, 0, genNDGArNumuFHC1d, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCQ2(systlist, 0, genNDGArNumuFHCQ2, loadersGArFHC);
+      PredictionInterp predNDGArNumuFHCW(systlist, 0, genNDGArNumuFHCW, loadersGArFHC);
       loadersGArFHC.Go();
       TFile *fNDGArfhc = new TFile(Form("%s/state_ND_GAr_FHC_hipi.root", outDir), "recreate");
       predNDGArNumuFHC.SaveTo(fNDGArfhc->mkdir("nd_gar_numu_fhc"));
@@ -330,14 +330,14 @@ void makePredInterpsGas(const bool isFHC, const int multi,
       std::cout<<"Saved GAr FHC inclusive samples"<<std::endl;
     }
     else {
-      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
-      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
-      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
-      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueFV && kRecoPi>3);
-      PredictionInterp predNDGArNumuRHC(systlist, this_calc, genNDGArNumuRHC, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHC1d(systlist, this_calc, genNDGArNumuRHC1d, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCQ2(systlist, this_calc, genNDGArNumuRHCQ2, loadersGArRHC);
-      PredictionInterp predNDGArNumuRHCW(systlist, this_calc, genNDGArNumuRHCW, loadersGArRHC);
+      NoOscPredictionGenerator genNDGArNumuRHC(axND, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+      NoOscPredictionGenerator genNDGArNumuRHC1d(axND1d, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+      NoOscPredictionGenerator genNDGArNumuRHCQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+      NoOscPredictionGenerator genNDGArNumuRHCW(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+      PredictionInterp predNDGArNumuRHC(systlist, 0, genNDGArNumuRHC, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHC1d(systlist, 0, genNDGArNumuRHC1d, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCQ2(systlist, 0, genNDGArNumuRHCQ2, loadersGArRHC);
+      PredictionInterp predNDGArNumuRHCW(systlist, 0, genNDGArNumuRHCW, loadersGArRHC);
       loadersGArRHC.Go();
       TFile *fNDGArrhc = new TFile(Form("%s/state_ND_GAr_RHC_hipi.root", outDir), "recreate");
       predNDGArNumuRHC.SaveTo(fNDGArrhc->mkdir("nd_gar_numu_rhc"));    
