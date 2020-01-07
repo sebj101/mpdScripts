@@ -28,7 +28,7 @@ bool IsInFV(const double x, const double y, const double z)
   return ( r < 200. && abs(x) < 200. );
 }
 
-void plotNDGAr(const char *outFile, const char* cafDir="/dune/data/users/sbjones/gasTpcCAF/")
+void plotNDGAr(const char *outFile, const char* cafDir="/dune/data/users/sbjones/gasTpcCAF/v3/")
 {
   TFile *fout = new TFile(outFile, "recreate");
   TChain *t = new TChain("caf");
@@ -37,6 +37,7 @@ void plotNDGAr(const char *outFile, const char* cafDir="/dune/data/users/sbjones
 
   int isFHC, isCC, reco_q, reco_numu, muon_contained, muon_tracker, nuPDG;
   int nipip, nipim, nipi0;
+  int gastpc_pi_pl_mult, gastpc_pi_min_mult, gastpc_pi_0_mult;
   double Ehad_veto;
   double Ev, LepE, Ev_reco, Elep_reco;
   double vtxx, vtxy, vtxz;
@@ -65,7 +66,12 @@ void plotNDGAr(const char *outFile, const char* cafDir="/dune/data/users/sbjones
   t->SetBranchAddress("pdg", pdg);
   t->SetBranchAddress("ptrue", ptrue);
   t->SetBranchAddress("partEvReco", partEvReco);
+  t->SetBranchAddress("gastpc_pi_pl_mult", &gastpc_pi_pl_mult);
+  t->SetBranchAddress("gastpc_pi_min_mult", &gastpc_pi_min_mult);
+  t->SetBranchAddress("gastpc_pi_0_mult", &gastpc_pi_0_mult);
 
+  // True vs reconstructed pion
+  TH2D *h2PiTrueReco = new TH2D("h2PiTrueReco", "Reconstructed vs true #pi multiplicity; N_{#pi, true}; N_{#pi, reco}", 5, -0.5, 4.5, 5, -0.5, 4.5);
   // True vs reco
   TH2D *h2EReco = new TH2D("h2EReco", "Reconstructed vs. true neutrino energy; E_{#nu, true} / GeV; E_{#nu, reco}; Events", 20, 0., 5., 20, 0., 5.);
   setHistAttr(h2EReco);
@@ -172,6 +178,8 @@ void plotNDGAr(const char *outFile, const char* cafDir="/dune/data/users/sbjones
 	}
       }
 
+      h2PiTrueReco->Fill(nipip+nipim+nipi0, gastpc_pi_pl_mult+gastpc_pi_min_mult+gastpc_pi_0_mult);
+
       if (nPi == 0) {
 	h2EReco0Pi->Fill(Ev, Ev_reco);
 	h2EHadReco0Pi->Fill(Ev - LepE, Ev_reco - Elep_reco);
@@ -216,6 +224,8 @@ void plotNDGAr(const char *outFile, const char* cafDir="/dune/data/users/sbjones
   l->SetLineStyle(2);
   fout->cd();
   l->Write("line");
+
+  h2PiTrueReco->Write();
 
   h2EReco->Write();
   h2EReco0Pi->Write();
