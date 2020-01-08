@@ -669,14 +669,14 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   hnumufhc_res->SetFillColor(kRed);
   hnumufhc_coh->SetLineColor(kOrange+1);
   hnumufhc_coh->SetFillColor(kOrange+1);
-  hnumufhc_mec->SetLineColor(kMagenta+1);
-  hnumufhc_mec->SetFillColor(kMagenta+1);
+  hnumufhc_mec->SetLineColor(kGreen+2);
+  hnumufhc_mec->SetFillColor(kGreen+2);
   THStack *hsEnuReco_mode = new THStack("hsEnuReco_mode", "HPgTPC #nu_{#mu} CC (FHC) separated by interaction mode; E_{#nu, reco} / GeV; Events / GeV");
   hsEnuReco_mode->Add(hnumufhc_coh);
-  hsEnuReco_mode->Add(hnumufhc_mec);
   hsEnuReco_mode->Add(hnumufhc_qe);  
-  hsEnuReco_mode->Add(hnumufhc_dis);
+  hsEnuReco_mode->Add(hnumufhc_mec);
   hsEnuReco_mode->Add(hnumufhc_res);
+  hsEnuReco_mode->Add(hnumufhc_dis);
   hsEnuReco_mode->Write();
   // 0pi separated by interaction mode
   TH1* hnumufhc0_qe  = predGArNumuFHC0_qe.Predict(0).FakeData(pot_nd).ToTH1(pot_nd,kPOT,kBinDensity);
@@ -702,8 +702,8 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   hnumufhc0_res->SetFillColor(kRed);
   hnumufhc0_coh->SetLineColor(kOrange+1);
   hnumufhc0_coh->SetFillColor(kOrange+1);
-  hnumufhc0_mec->SetLineColor(kMagenta+1);
-  hnumufhc0_mec->SetFillColor(kMagenta+1);
+  hnumufhc0_mec->SetLineColor(kGreen+2);
+  hnumufhc0_mec->SetFillColor(kGreen+2);
   THStack *hsEnuReco0_mode = new THStack("hsEnuReco0_mode", "HPgTPC #nu_{#mu} CC (FHC) separated by interaction mode; E_{#nu, reco} / GeV; Events / GeV");
   hsEnuReco0_mode->Add(hnumufhc0_coh);
   hsEnuReco0_mode->Add(hnumufhc0_mec);
@@ -735,8 +735,8 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   hnumufhc1_res->SetFillColor(kRed);
   hnumufhc1_coh->SetLineColor(kOrange+1);
   hnumufhc1_coh->SetFillColor(kOrange+1);
-  hnumufhc1_mec->SetLineColor(kMagenta+1);
-  hnumufhc1_mec->SetFillColor(kMagenta+1);
+  hnumufhc1_mec->SetLineColor(kGreen+2);
+  hnumufhc1_mec->SetFillColor(kGreen+2);
   THStack *hsEnuReco1_mode = new THStack("hsEnuReco1_mode", "HPgTPC #nu_{#mu} CC (FHC) separated by interaction mode; E_{#nu, reco} / GeV; Events / GeV");
   hsEnuReco1_mode->Add(hnumufhc1_coh);
   hsEnuReco1_mode->Add(hnumufhc1_mec);
@@ -768,8 +768,8 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   hnumufhc2_res->SetFillColor(kRed);
   hnumufhc2_coh->SetLineColor(kOrange+1);
   hnumufhc2_coh->SetFillColor(kOrange+1);
-  hnumufhc2_mec->SetLineColor(kMagenta+1);
-  hnumufhc2_mec->SetFillColor(kMagenta+1);
+  hnumufhc2_mec->SetLineColor(kGreen+2);
+  hnumufhc2_mec->SetFillColor(kGreen+2);
   THStack *hsEnuReco2_mode = new THStack("hsEnuReco2_mode", "HPgTPC #nu_{#mu} CC (FHC) separated by interaction mode; E_{#nu, reco} / GeV; Events / GeV");
   hsEnuReco2_mode->Add(hnumufhc2_coh);
   hsEnuReco2_mode->Add(hnumufhc2_mec);
@@ -801,8 +801,8 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   hnumufhc3_res->SetFillColor(kRed);
   hnumufhc3_coh->SetLineColor(kOrange+1);
   hnumufhc3_coh->SetFillColor(kOrange+1);
-  hnumufhc3_mec->SetLineColor(kMagenta+1);
-  hnumufhc3_mec->SetFillColor(kMagenta+1);
+  hnumufhc3_mec->SetLineColor(kGreen+2);
+  hnumufhc3_mec->SetFillColor(kGreen+2);
   THStack *hsEnuReco3_mode = new THStack("hsEnuReco3_mode", "HPgTPC #nu_{#mu} CC (FHC) separated by interaction mode; E_{#nu, reco} / GeV; Events / GeV");
   hsEnuReco3_mode->Add(hnumufhc3_coh);
   hsEnuReco3_mode->Add(hnumufhc3_mec);
@@ -834,8 +834,8 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   hnumufhcHi_res->SetFillColor(kRed);
   hnumufhcHi_coh->SetLineColor(kOrange+1);
   hnumufhcHi_coh->SetFillColor(kOrange+1);
-  hnumufhcHi_mec->SetLineColor(kMagenta+1);
-  hnumufhcHi_mec->SetFillColor(kMagenta+1);
+  hnumufhcHi_mec->SetLineColor(kGreen+2);
+  hnumufhcHi_mec->SetFillColor(kGreen+2);
   THStack *hsERecoHi_mode = new THStack("hsERecoHi_mode", "HPgTPC #nu_{#mu} CC (FHC) separated by interaction mode; E_{#nu, reco} / GeV; Events / GeV");
   hsERecoHi_mode->Add(hnumufhcHi_coh);
   hsERecoHi_mode->Add(hnumufhcHi_mec);
@@ -868,14 +868,14 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   hnumufhcEnu_res->SetFillColor(kRed);
   hnumufhcEnu_coh->SetLineColor(kOrange+1);
   hnumufhcEnu_coh->SetFillColor(kOrange+1);
-  hnumufhcEnu_mec->SetLineColor(kMagenta+1);
-  hnumufhcEnu_mec->SetFillColor(kMagenta+1);
+  hnumufhcEnu_mec->SetLineColor(kGreen+2);
+  hnumufhcEnu_mec->SetFillColor(kGreen+2);
   THStack *hsEnu_mode = new THStack("hsEnu_mode", "HPgTPC #nu_{#mu} CC (FHC) separated by interaction mode; E_{#nu} / GeV; Events / GeV");
   hsEnu_mode->Add(hnumufhcEnu_coh);
-  hsEnu_mode->Add(hnumufhcEnu_mec);
   hsEnu_mode->Add(hnumufhcEnu_qe);  
-  hsEnu_mode->Add(hnumufhcEnu_dis);
+  hsEnu_mode->Add(hnumufhcEnu_mec);
   hsEnu_mode->Add(hnumufhcEnu_res);
+  hsEnu_mode->Add(hnumufhcEnu_dis);
   hsEnu_mode->Write();
  
   // Q2
@@ -902,14 +902,14 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   hnumufhcQ2_res->SetFillColor(kRed);
   hnumufhcQ2_coh->SetLineColor(kOrange+1);
   hnumufhcQ2_coh->SetFillColor(kOrange+1);
-  hnumufhcQ2_mec->SetLineColor(kMagenta+1);
-  hnumufhcQ2_mec->SetFillColor(kMagenta+1);
+  hnumufhcQ2_mec->SetLineColor(kGreen+2);
+  hnumufhcQ2_mec->SetFillColor(kGreen+2);
   THStack *hsQ2_mode = new THStack("hsQ2_mode", "HPgTPC #nu_{#mu} CC (FHC) separated by interaction mode; Q^{2} / GeV; Events");
   hsQ2_mode->Add(hnumufhcQ2_coh);
-  hsQ2_mode->Add(hnumufhcQ2_mec);
   hsQ2_mode->Add(hnumufhcQ2_qe);  
-  hsQ2_mode->Add(hnumufhcQ2_dis);
+  hsQ2_mode->Add(hnumufhcQ2_mec);
   hsQ2_mode->Add(hnumufhcQ2_res);
+  hsQ2_mode->Add(hnumufhcQ2_dis);
   hsQ2_mode->Write();
 
   // Reco Q2
@@ -936,14 +936,14 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   hnumufhcQ2Reco_res->SetFillColor(kRed);
   hnumufhcQ2Reco_coh->SetLineColor(kOrange+1);
   hnumufhcQ2Reco_coh->SetFillColor(kOrange+1);
-  hnumufhcQ2Reco_mec->SetLineColor(kMagenta+1);
-  hnumufhcQ2Reco_mec->SetFillColor(kMagenta+1);
+  hnumufhcQ2Reco_mec->SetLineColor(kGreen+2);
+  hnumufhcQ2Reco_mec->SetFillColor(kGreen+2);
   THStack *hsQ2Reco_mode = new THStack("hsQ2Reco_mode", "HPgTPC #nu_{#mu} CC (FHC) separated by interaction mode; Q^{2}_{reco} / GeV; Events");
   hsQ2Reco_mode->Add(hnumufhcQ2Reco_coh);
-  hsQ2Reco_mode->Add(hnumufhcQ2Reco_mec);
   hsQ2Reco_mode->Add(hnumufhcQ2Reco_qe);  
-  hsQ2Reco_mode->Add(hnumufhcQ2Reco_dis);
+  hsQ2Reco_mode->Add(hnumufhcQ2Reco_mec);
   hsQ2Reco_mode->Add(hnumufhcQ2Reco_res);
+  hsQ2Reco_mode->Add(hnumufhcQ2Reco_dis);
   hsQ2Reco_mode->Write();
 
   fout->Close();
