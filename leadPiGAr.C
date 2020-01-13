@@ -7,6 +7,7 @@
 #include "CAFAna/Core/Var.h"
 #include "CAFAna/Core/Loaders.h"
 #include "CAFAna/Core/Progress.h"
+#include "CAFAna/Core/Ratio.h"
 #include "CAFAna/Cuts/TruthCuts.h"
 #include "CAFAna/Cuts/AnaCuts.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
@@ -67,32 +68,44 @@ void setHistAttr(TH2 *h2)
 using namespace ana;
 
 // POT for 3.5 years
-const double pot_fd = 3.5 * POT120 * 40/1.13;
-const double pot_nd = 3.5 * POT120;
+const double years = 1.; // of POT
+const double pot_fd = years * POT120 * 40/1.13;
+const double pot_nd = years * POT120;
 // Vars
 const Var kPiplmult  = SIMPLEVAR(dune.gastpc_pi_pl_mult);
 const Var KPiminmult = SIMPLEVAR(dune.gastpc_pi_min_mult);
 const Var kRecoChargedPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult);
-const Var kRecoPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult) + SIMPLEVAR(dune.gastpc_pi_0_mult);
-const Var kEnu = SIMPLEVAR(dune.Ev);
+const Var kRecoPi        = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult) + SIMPLEVAR(dune.gastpc_pi_0_mult);
+const Var kP             = SIMPLEVAR(dune.nP);
+const Var kRecoP         = SIMPLEVAR(dune.gastpc_pro_mult);
+const Var kRecoOtherHad  = SIMPLEVAR(dune.gastpc_other_had_mult); 
+const Var kPi   = SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipip) + SIMPLEVAR(dune.nipi0);
+const Var kEnu  = SIMPLEVAR(dune.Ev);
+const Var kLepE = SIMPLEVAR(dune.LepE);
+const Var kRecoLepE = SIMPLEVAR(dune.Elep_reco);
 const Var kRecoEnergyND  = SIMPLEVAR(dune.Ev_reco);
-const Var kLeadPiE = SIMPLEVAR(dune.gastpc_lead_pi_E);
+const Var kLeadPiE    = SIMPLEVAR(dune.gastpc_lead_pi_E);
 const Var kSubleadPiE = SIMPLEVAR(dune.gastpc_sublead_pi_E);
-const Var kMode = SIMPLEVAR(dune.mode);
-const Var kQ2 = SIMPLEVAR(dune.Q2);
-const Var kFHC = SIMPLEVAR(dune.isFHC);
+const Var kMode  = SIMPLEVAR(dune.mode);
+const Var kQ2    = SIMPLEVAR(dune.Q2);
+const Var kFHC   = SIMPLEVAR(dune.isFHC);
+const Var kTheta = SIMPLEVAR(dune.theta_reco);
+const double mmu = 0.10566; // GeV/c^2
 // Reco Q2
 const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
 		  [](const caf::StandardRecord* sr) {
-		    double q2 = 0;
-		    q2 = 4 * sr->dune.Elep_reco *TMath::Sin(sr->dune.theta_reco/2.) * TMath::Sin(sr->dune.theta_reco/2.) *sr->dune.Ev_reco;
+		    // double q2 = 4 * sr->dune.Elep_reco *TMath::Sin(sr->dune.theta_reco/2.) * TMath::Sin(sr->dune.theta_reco/2.) *sr->dune.Ev_reco;
+		    double pmu = sqrt(sr->dune.Elep_reco*sr->dune.Elep_reco - mmu*mmu);
+		    double q2 = 2 * sr->dune.Ev_reco * (sr->dune.Elep_reco - pmu*TMath::Cos(sr->dune.theta_reco)) - mmu*mmu;
 		    return q2;
 		  });
 // Reco W
 const Var kRecoW({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
 		 [](const caf::StandardRecord* sr) {
 		   double w = 0;
-		   double q2 = 4 * sr->dune.Elep_reco *TMath::Sin(sr->dune.theta_reco/2.) * TMath::Sin(sr->dune.theta_reco/2.) *sr->dune.Ev_reco;
+		   // double q2 = 4 * sr->dune.Elep_reco *TMath::Sin(sr->dune.theta_reco/2.) * TMath::Sin(sr->dune.theta_reco/2.) *sr->dune.Ev_reco;
+		   double pmu = sqrt(sr->dune.Elep_reco*sr->dune.Elep_reco - mmu*mmu);
+		   double q2 = 2 * sr->dune.Ev_reco * (sr->dune.Elep_reco - pmu*TMath::Cos(sr->dune.theta_reco)) - mmu*mmu;
 		   w = TMath::Sqrt(-q2 + 2 * 0.939 * (sr->dune.Ev_reco-sr->dune.Elep_reco) + 0.939*0.939);
 		   return w;
 		 });
@@ -101,12 +114,23 @@ std::vector<double> binEEdges = {0., 0.5, 1., 1.25, 1.5, 1.75,
 				 2., 2.25, 2.5, 2.75, 
 				 3., 3.25, 3.5, 3.75, 
 				 4., 5., 6., 10.};
-const Binning simpleBins = Binning::Simple(30, 0, 3);
+const Binning simpleBins   = Binning::Simple(30, 0, 3);
 const Binning simpleQ2Bins = Binning::Simple(30, 0, 6);
-const Binning simpleWBins  = Binning::Simple(30, 0, 6);
-const Binning binsEreco  = Binning::Custom(binEEdges);
+const Binning simpleWBins  = Binning::Simple(15, 0, 3);
+const Binning binsEreco    = Binning::Custom(binEEdges);
+const Binning binsParticle = Binning::Simple(6, -0.5, 5.5);
+const Binning binsTheta = Binning::Simple(30, 0, 1.6);
 
-const HistAxis axRecoW("W (GeV)", simpleWBins, kRecoW);
+const HistAxis axLepE("E_{#mu} / GeV", binsEreco, kLepE);
+const HistAxis axRecoLepE("E_{#mu, reco} / GeV", binsEreco, kRecoLepE);
+const HistAxis axTrueRecoLepE("E_{#mu} / GeV", binsEreco, kLepE, 
+			      "E_{#mu, reco} / GeV", binsEreco, kRecoLepE);
+const HistAxis axTrueRecoPi("N_{#pi, true}", binsParticle, kPi,
+			    "N_{#pi, reco}", binsParticle, kRecoPi);
+const HistAxis axTrueRecoP("N_{P, true}", binsParticle, kP,
+			   "N_{P, reco}", binsParticle, kRecoP);
+const HistAxis axTheta("#theta_{reco}", binsTheta, kTheta);
+const HistAxis axRecoW("W / GeV", simpleWBins, kRecoW);
 const HistAxis axND("E_{#nu, reco} / GeV", binsEreco, kRecoEnergyND);
 const HistAxis axNDTrue("E_{#nu} / GeV", binsEreco, kEnu);
 const HistAxis axQ2True("Q^{2} / GeV", simpleQ2Bins, kQ2);
@@ -114,7 +138,7 @@ const HistAxis axQ2Reco("Q^{2}_{reco} / GeV", simpleQ2Bins, kRecoQ2);
 const HistAxis axLeadPi("E_{#pi, lead} (GeV)", simpleBins, kLeadPiE);
 const HistAxis axSubleadPi("E_{#pi, sub-lead} (GeV)", simpleBins, kSubleadPiE);
 
-void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones/gasTpcCAF/v3/") 
+void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones/gasTpcCAF/v6/") 
 {
   gROOT->SetBatch(kTRUE);
   rootlogon();
@@ -135,6 +159,40 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
   SpectrumLoader loaderGArRHC(Form("%s/CAF_RHC.root", garDir), kBeam);
   loadersGArFHC.AddLoader(&loaderGArFHC, caf::kNEARDET, Loaders::kMC);
   loadersGArRHC.AddLoader(&loaderGArRHC, caf::kNEARDET, Loaders::kMC);
+
+  // True vs reco particle multiplicities
+  NoOscPredictionGenerator genFhcPi(axTrueRecoPi, kPassND_FHC_NUMU && kIsTrueGasFV);
+  PredictionInterp predFhcPi(systlist, 0, genFhcPi, loadersGArFHC);
+  NoOscPredictionGenerator genFhcP(axTrueRecoP, kPassND_FHC_NUMU && kIsTrueGasFV);
+  PredictionInterp predFhcP(systlist, 0, genFhcP, loadersGArFHC);
+
+  // Reconstructed lepton energies
+  NoOscPredictionGenerator genFhcRecoLepE(axRecoLepE, kPassND_FHC_NUMU && kIsTrueGasFV);
+  NoOscPredictionGenerator genFhcRecoLepE0(axRecoLepE, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+  NoOscPredictionGenerator genFhcRecoLepE1(axRecoLepE, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+  NoOscPredictionGenerator genFhcRecoLepE2(axRecoLepE, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+  NoOscPredictionGenerator genFhcRecoLepE3(axRecoLepE, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+  NoOscPredictionGenerator genFhcRecoLepEHi(axRecoLepE, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+  PredictionInterp predFhcRecoLepE(systlist, 0, genFhcRecoLepE, loadersGArFHC);
+  PredictionInterp predFhcRecoLepE0(systlist, 0, genFhcRecoLepE0, loadersGArFHC);
+  PredictionInterp predFhcRecoLepE1(systlist, 0, genFhcRecoLepE1, loadersGArFHC);
+  PredictionInterp predFhcRecoLepE2(systlist, 0, genFhcRecoLepE2, loadersGArFHC);
+  PredictionInterp predFhcRecoLepE3(systlist, 0, genFhcRecoLepE3, loadersGArFHC);
+  PredictionInterp predFhcRecoLepEHi(systlist, 0, genFhcRecoLepEHi, loadersGArFHC);
+
+  // Reconstructed lepton energy
+  NoOscPredictionGenerator genFhcTheta(axTheta, kPassND_FHC_NUMU && kIsTrueGasFV);
+  NoOscPredictionGenerator genFhcTheta0(axTheta, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==0);
+  NoOscPredictionGenerator genFhcTheta1(axTheta, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==1);
+  NoOscPredictionGenerator genFhcTheta2(axTheta, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==2);
+  NoOscPredictionGenerator genFhcTheta3(axTheta, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi==3);
+  NoOscPredictionGenerator genFhcThetaHi(axTheta, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi>3);
+  PredictionInterp predFhcTheta(systlist, 0, genFhcTheta, loadersGArFHC);
+  PredictionInterp predFhcTheta0(systlist, 0, genFhcTheta0, loadersGArFHC);
+  PredictionInterp predFhcTheta1(systlist, 0, genFhcTheta1, loadersGArFHC);
+  PredictionInterp predFhcTheta2(systlist, 0, genFhcTheta2, loadersGArFHC);
+  PredictionInterp predFhcTheta3(systlist, 0, genFhcTheta3, loadersGArFHC);
+  PredictionInterp predFhcThetaHi(systlist, 0, genFhcThetaHi, loadersGArFHC);
 
   // Enu reco spectra
   NoOscPredictionGenerator genGArNumuFHC(axND, kPassND_FHC_NUMU && kIsTrueGasFV);
@@ -338,6 +396,312 @@ void leadPiGAr(const char *outfile, const char *garDir="/dune/data/users/sbjones
 
   TFile *fout = new TFile(outfile, "recreate");
   fout->cd();
+
+  // True vs. reco pion multiplicity
+  TH2 *h2Pi       = predFhcPi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2Pi_nuwro = predFhcPi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH2(pot_nd);
+  h2Pi->Scale(1./h2Pi->Integral());
+  h2Pi_nuwro->Scale(1./h2Pi_nuwro->Integral());
+  setHistAttr(h2Pi);
+  setHistAttr(h2Pi_nuwro);
+  h2Pi->SetTitle("True vs. reco pion multiplicity in HPgTPC");
+  h2Pi_nuwro->SetTitle("True vs. reco pion multiplicity in HPgTPC (NuWro shifts)");
+  h2Pi->Write("h2Pi");
+  h2Pi_nuwro->Write("h2Pi_nuwro");
+  // True vs. reco proton multiplicity
+  TH2 *h2P       = predFhcP.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2P_nuwro = predFhcP.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH2(pot_nd);
+  h2P->Scale(1./h2P->Integral());
+  h2P_nuwro->Scale(1./h2P_nuwro->Integral());
+  setHistAttr(h2P);
+  setHistAttr(h2P_nuwro);
+  h2P->SetTitle("True vs. reco proton multiplicity in HPgTPC");
+  h2P_nuwro->SetTitle("True vs. reco proton multiplicity in HPgTPC (NuWro shifts)");
+  h2P->Write("h2P");
+  h2P_nuwro->Write("h2P_nuwro");
+
+  // Reconstructed lepton energy
+  TH1 *hFhcRecoLepE  = predFhcRecoLepE.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepE_nuwro  = predFhcRecoLepE.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepE0 = predFhcRecoLepE0.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepE0_nuwro  = predFhcRecoLepE0.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepE1 = predFhcRecoLepE1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepE1_nuwro  = predFhcRecoLepE1.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepE2 = predFhcRecoLepE2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepE2_nuwro  = predFhcRecoLepE2.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepE3 = predFhcRecoLepE3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepE3_nuwro  = predFhcRecoLepE3.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepEHi = predFhcRecoLepEHi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  TH1 *hFhcRecoLepEHi_nuwro  = predFhcRecoLepEHi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd, kPOT, kBinDensity);
+  setHistAttr(hFhcRecoLepE);  
+  setHistAttr(hFhcRecoLepE_nuwro);
+  setHistAttr(hFhcRecoLepE0);  
+  setHistAttr(hFhcRecoLepE0_nuwro);
+  setHistAttr(hFhcRecoLepE1);  
+  setHistAttr(hFhcRecoLepE1_nuwro);
+  setHistAttr(hFhcRecoLepE2);  
+  setHistAttr(hFhcRecoLepE2_nuwro);
+  setHistAttr(hFhcRecoLepE3);  
+  setHistAttr(hFhcRecoLepE3_nuwro);
+  setHistAttr(hFhcRecoLepEHi);  
+  setHistAttr(hFhcRecoLepEHi_nuwro);
+  hFhcRecoLepE->SetTitle("Inclusive; E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE_nuwro->SetTitle("Inclusive (NuWro shifts); E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE_nuwro->SetLineColor(kRed);
+  hFhcRecoLepE0->SetTitle("0#pi; E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE0_nuwro->SetTitle("0#pi (NuWro shifts); E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE0_nuwro->SetLineColor(kRed);
+  hFhcRecoLepE1->SetTitle("1#pi; E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE1_nuwro->SetTitle("1#pi (NuWro shifts); E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE1_nuwro->SetLineColor(kRed);
+  hFhcRecoLepE2->SetTitle("2#pi; E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE2_nuwro->SetTitle("2#pi (NuWro shifts); E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE2_nuwro->SetLineColor(kRed);
+  hFhcRecoLepE3->SetTitle("3#pi; E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE3_nuwro->SetTitle("3#pi (NuWro shifts); E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepE3_nuwro->SetLineColor(kRed);
+  hFhcRecoLepEHi->SetTitle(">3#pi; E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepEHi_nuwro->SetTitle(">3#pi (NuWro shifts); E_{#mu, reco} / GeV; Events / GeV");
+  hFhcRecoLepEHi_nuwro->SetLineColor(kRed);
+  hFhcRecoLepE->Write("hFhcRecoLepE");
+  hFhcRecoLepE_nuwro->Write("hFhcRecoLepE_nuwro");
+  hFhcRecoLepE0->Write("hFhcRecoLepE0");
+  hFhcRecoLepE0_nuwro->Write("hFhcRecoLepE0_nuwro");
+  hFhcRecoLepE1->Write("hFhcRecoLepE1");
+  hFhcRecoLepE1_nuwro->Write("hFhcRecoLepE1_nuwro");
+  hFhcRecoLepE2->Write("hFhcRecoLepE2");
+  hFhcRecoLepE2_nuwro->Write("hFhcRecoLepE2_nuwro");
+  hFhcRecoLepE3->Write("hFhcRecoLepE3");
+  hFhcRecoLepE3_nuwro->Write("hFhcRecoLepE3_nuwro");
+  hFhcRecoLepEHi->Write("hFhcRecoLepEHi");
+  hFhcRecoLepEHi_nuwro->Write("hFhcRecoLepEHi_nuwro");
+  THStack *hsFhcRecoLepE = new THStack("hsFhcRecoLepE", Form("Reconstructed lepton energy: Inclusive #nu_{#mu} CC in HPgTPC (FHC). %.2g years; E_{#mu, reco} / GeV; Events / GeV", years)); 
+  hsFhcRecoLepE->Add(hFhcRecoLepE);
+  hsFhcRecoLepE->Add(hFhcRecoLepE_nuwro);
+  hsFhcRecoLepE->Write();
+  THStack *hsFhcRecoLepE0 = new THStack("hsFhcRecoLepE0", Form("Reconstructed lepton energy: 0#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; E_{#mu, reco} / GeV; Events / GeV", years)); 
+  hsFhcRecoLepE0->Add(hFhcRecoLepE0);
+  hsFhcRecoLepE0->Add(hFhcRecoLepE0_nuwro);
+  hsFhcRecoLepE0->Write();
+  THStack *hsFhcRecoLepE1 = new THStack("hsFhcRecoLepE1", Form("Reconstructed lepton energy: 1#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; E_{#mu, reco} / GeV; Events / GeV", years)); 
+  hsFhcRecoLepE1->Add(hFhcRecoLepE1);
+  hsFhcRecoLepE1->Add(hFhcRecoLepE1_nuwro);
+  hsFhcRecoLepE1->Write();
+  THStack *hsFhcRecoLepE2 = new THStack("hsFhcRecoLepE2", Form("Reconstructed lepton energy: 2#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; E_{#mu, reco} / GeV; Events / GeV", years)); 
+  hsFhcRecoLepE2->Add(hFhcRecoLepE2);
+  hsFhcRecoLepE2->Add(hFhcRecoLepE2_nuwro);
+  hsFhcRecoLepE2->Write();
+  THStack *hsFhcRecoLepE3 = new THStack("hsFhcRecoLepE3", Form("Reconstructed lepton energy: 3#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; E_{#mu, reco} / GeV; Events / GeV", years)); 
+  hsFhcRecoLepE3->Add(hFhcRecoLepE3);
+  hsFhcRecoLepE3->Add(hFhcRecoLepE3_nuwro);
+  hsFhcRecoLepE3->Write();
+  THStack *hsFhcRecoLepEHi = new THStack("hsFhcRecoLepEHi", Form("Reconstructed lepton energy: >3#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; E_{#mu, reco} / GeV; Events / GeV", years)); 
+  hsFhcRecoLepEHi->Add(hFhcRecoLepEHi);
+  hsFhcRecoLepEHi->Add(hFhcRecoLepEHi_nuwro);
+  hsFhcRecoLepEHi->Write();
+  Ratio rFhcRecoLepE(predFhcRecoLepE.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcRecoLepE.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcRecoLepE0(predFhcRecoLepE0.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcRecoLepE0.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcRecoLepE1(predFhcRecoLepE1.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcRecoLepE1.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcRecoLepE2(predFhcRecoLepE2.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcRecoLepE2.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcRecoLepE3(predFhcRecoLepE3.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcRecoLepE3.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcRecoLepEHi(predFhcRecoLepEHi.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcRecoLepEHi.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  TH1 *hrFhcRecoLepE   = rFhcRecoLepE.ToTH1();  
+  TH1 *hrFhcRecoLepE0  = rFhcRecoLepE0.ToTH1();  
+  TH1 *hrFhcRecoLepE1  = rFhcRecoLepE1.ToTH1();  
+  TH1 *hrFhcRecoLepE2  = rFhcRecoLepE2.ToTH1();  
+  TH1 *hrFhcRecoLepE3  = rFhcRecoLepE3.ToTH1();  
+  TH1 *hrFhcRecoLepEHi = rFhcRecoLepEHi.ToTH1();  
+  setHistAttr(hrFhcRecoLepE);  
+  setHistAttr(hrFhcRecoLepE0);  
+  setHistAttr(hrFhcRecoLepE1);  
+  setHistAttr(hrFhcRecoLepE2);  
+  setHistAttr(hrFhcRecoLepE3);  
+  setHistAttr(hrFhcRecoLepEHi);  
+  hrFhcRecoLepE->SetTitle(Form("Reconstructed lepton energy, %.2g years: Inclusive; E_{#mu, reco} / GeV; GENIE/NuWro", years));
+  hrFhcRecoLepE0->SetTitle(Form("Reconstructed lepton energy, %.2g years: 0#pi; E_{#mu, reco} / GeV; GENIE/NuWro", years));
+  hrFhcRecoLepE1->SetTitle(Form("Reconstructed lepton energy, %.2g years: 1#pi; E_{#mu, reco} / GeV; GENIE/NuWro", years));
+  hrFhcRecoLepE2->SetTitle(Form("Reconstructed lepton energy, %.2g years: 2#pi; E_{#mu, reco} / GeV; GENIE/NuWro", years));
+  hrFhcRecoLepE3->SetTitle(Form("Reconstructed lepton energy, %.2g years: 3#pi; E_{#mu, reco} / GeV; GENIE/NuWro", years));
+  hrFhcRecoLepEHi->SetTitle(Form("Reconstructed lepton energy, %.2g years: >3#pi; E_{#mu, reco} / GeV; GENIE/NuWro", years));
+  hrFhcRecoLepE->Write("hrFhcRecoLepE");
+  hrFhcRecoLepE0->Write("hrFhcRecoLepE0");
+  hrFhcRecoLepE1->Write("hrFhcRecoLepE1");
+  hrFhcRecoLepE2->Write("hrFhcRecoLepE2");
+  hrFhcRecoLepE3->Write("hrFhcRecoLepE3");
+  hrFhcRecoLepEHi->Write("hrFhcRecoLepEHi");
+  // Normalise to unity for better comparison
+  hFhcRecoLepE->Scale(1./hFhcRecoLepE->Integral());
+  hFhcRecoLepE0->Scale(1./hFhcRecoLepE0->Integral());
+  hFhcRecoLepE1->Scale(1./hFhcRecoLepE1->Integral());
+  hFhcRecoLepE2->Scale(1./hFhcRecoLepE2->Integral());
+  hFhcRecoLepE3->Scale(1./hFhcRecoLepE3->Integral());
+  hFhcRecoLepEHi->Scale(1./hFhcRecoLepEHi->Integral());
+  hFhcRecoLepE_nuwro->Scale(1./hFhcRecoLepE_nuwro->Integral());
+  hFhcRecoLepE0_nuwro->Scale(1./hFhcRecoLepE0_nuwro->Integral());
+  hFhcRecoLepE1_nuwro->Scale(1./hFhcRecoLepE1_nuwro->Integral());
+  hFhcRecoLepE2_nuwro->Scale(1./hFhcRecoLepE2_nuwro->Integral());
+  hFhcRecoLepE3_nuwro->Scale(1./hFhcRecoLepE3_nuwro->Integral());
+  hFhcRecoLepEHi_nuwro->Scale(1./hFhcRecoLepEHi_nuwro->Integral());
+  hFhcRecoLepE->Divide(hFhcRecoLepE_nuwro);
+  hFhcRecoLepE0->Divide(hFhcRecoLepE0_nuwro);
+  hFhcRecoLepE1->Divide(hFhcRecoLepE1_nuwro);
+  hFhcRecoLepE2->Divide(hFhcRecoLepE2_nuwro);
+  hFhcRecoLepE3->Divide(hFhcRecoLepE3_nuwro);
+  hFhcRecoLepEHi->Divide(hFhcRecoLepEHi_nuwro);
+  hFhcRecoLepE->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcRecoLepE0->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcRecoLepE1->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcRecoLepE2->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcRecoLepE3->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcRecoLepEHi->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcRecoLepE->Write("hrFhcRecoLepENorm");
+  hFhcRecoLepE0->Write("hrFhcRecoLepE0Norm");
+  hFhcRecoLepE1->Write("hrFhcRecoLepE1Norm");
+  hFhcRecoLepE2->Write("hrFhcRecoLepE2Norm");
+  hFhcRecoLepE3->Write("hrFhcRecoLepE3Norm");
+  hFhcRecoLepEHi->Write("hrFhcRecoLepEHiNorm");
+
+  // Reconstructed lepton angle
+  TH1 *hFhcTheta  = predFhcTheta.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcTheta_nuwro  = predFhcTheta.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcTheta0 = predFhcTheta0.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcTheta0_nuwro  = predFhcTheta0.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcTheta1 = predFhcTheta1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcTheta1_nuwro  = predFhcTheta1.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcTheta2 = predFhcTheta2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcTheta2_nuwro  = predFhcTheta2.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcTheta3 = predFhcTheta3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcTheta3_nuwro  = predFhcTheta3.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcThetaHi = predFhcThetaHi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcThetaHi_nuwro  = predFhcThetaHi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  setHistAttr(hFhcTheta);  
+  setHistAttr(hFhcTheta_nuwro);
+  setHistAttr(hFhcTheta0);  
+  setHistAttr(hFhcTheta0_nuwro);
+  setHistAttr(hFhcTheta1);  
+  setHistAttr(hFhcTheta1_nuwro);
+  setHistAttr(hFhcTheta2);  
+  setHistAttr(hFhcTheta2_nuwro);
+  setHistAttr(hFhcTheta3);  
+  setHistAttr(hFhcTheta3_nuwro);
+  setHistAttr(hFhcThetaHi);  
+  setHistAttr(hFhcThetaHi_nuwro);
+  hFhcTheta->SetTitle("Inclusive; #theta_{#mu, reco}; Events");
+  hFhcTheta_nuwro->SetTitle("Inclusive (NuWro shifts); #theta_{#mu, reco}; Events");
+  hFhcTheta_nuwro->SetLineColor(kRed);
+  hFhcTheta0->SetTitle("0#pi; #theta_{#mu, reco}; Events");
+  hFhcTheta0_nuwro->SetTitle("0#pi (NuWro shifts); #theta_{#mu, reco}; Events");
+  hFhcTheta0_nuwro->SetLineColor(kRed);
+  hFhcTheta1->SetTitle("1#pi; #theta_{#mu, reco}; Events");
+  hFhcTheta1_nuwro->SetTitle("1#pi (NuWro shifts); #theta_{#mu, reco}; Events");
+  hFhcTheta1_nuwro->SetLineColor(kRed);
+  hFhcTheta2->SetTitle("2#pi; #theta_{#mu, reco}; Events");
+  hFhcTheta2_nuwro->SetTitle("2#pi (NuWro shifts); #theta_{#mu, reco}; Events");
+  hFhcTheta2_nuwro->SetLineColor(kRed);
+  hFhcTheta3->SetTitle("3#pi; #theta_{#mu, reco}; Events");
+  hFhcTheta3_nuwro->SetTitle("3#pi (NuWro shifts); #theta_{#mu, reco}; Events");
+  hFhcTheta3_nuwro->SetLineColor(kRed);
+  hFhcThetaHi->SetTitle(">3#pi; #theta_{#mu, reco}; Events");
+  hFhcThetaHi_nuwro->SetTitle(">3#pi (NuWro shifts); #theta_{#mu, reco}; Events");
+  hFhcThetaHi_nuwro->SetLineColor(kRed);
+  hFhcTheta->Write("hFhcTheta");
+  hFhcTheta_nuwro->Write("hFhcTheta_nuwro");
+  hFhcTheta0->Write("hFhcTheta0");
+  hFhcTheta0_nuwro->Write("hFhcTheta0_nuwro");
+  hFhcTheta1->Write("hFhcTheta1");
+  hFhcTheta1_nuwro->Write("hFhcTheta1_nuwro");
+  hFhcTheta2->Write("hFhcTheta2");
+  hFhcTheta2_nuwro->Write("hFhcTheta2_nuwro");
+  hFhcTheta3->Write("hFhcTheta3");
+  hFhcTheta3_nuwro->Write("hFhcTheta3_nuwro");
+  hFhcThetaHi->Write("hFhcThetaHi");
+  hFhcThetaHi_nuwro->Write("hFhcThetaHi_nuwro");
+  THStack *hsFhcTheta = new THStack("hsFhcTheta", Form("Reconstructed lepton angle: Inclusive #nu_{#mu} CC in HPgTPC (FHC). %.2g years; #theta_{#mu, reco}; Events", years)); 
+  hsFhcTheta->Add(hFhcTheta);
+  hsFhcTheta->Add(hFhcTheta_nuwro);
+  hsFhcTheta->Write();
+  THStack *hsFhcTheta0 = new THStack("hsFhcTheta0", Form("Reconstructed lepton angle: 0#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; #theta_{#mu, reco}; Events", years)); 
+  hsFhcTheta0->Add(hFhcTheta0);
+  hsFhcTheta0->Add(hFhcTheta0_nuwro);
+  hsFhcTheta0->Write();
+  THStack *hsFhcTheta1 = new THStack("hsFhcTheta1", Form("Reconstructed lepton angle: 1#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; #theta_{#mu, reco}; Events", years)); 
+  hsFhcTheta1->Add(hFhcTheta1);
+  hsFhcTheta1->Add(hFhcTheta1_nuwro);
+  hsFhcTheta1->Write();
+  THStack *hsFhcTheta2 = new THStack("hsFhcTheta2", Form("Reconstructed lepton angle: 2#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; #theta_{#mu, reco}; Events", years)); 
+  hsFhcTheta2->Add(hFhcTheta2);
+  hsFhcTheta2->Add(hFhcTheta2_nuwro);
+  hsFhcTheta2->Write();
+  THStack *hsFhcTheta3 = new THStack("hsFhcTheta3", Form("Reconstructed lepton angle: 3#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; #theta_{#mu, reco}; Events", years)); 
+  hsFhcTheta3->Add(hFhcTheta3);
+  hsFhcTheta3->Add(hFhcTheta3_nuwro);
+  hsFhcTheta3->Write();
+  THStack *hsFhcThetaHi = new THStack("hsFhcThetaHi", Form("Reconstructed lepton angle: >3#pi #nu_{#mu} CC in HPgTPC (FHC). %.2g years; #theta_{#mu, reco}; Events", years)); 
+  hsFhcThetaHi->Add(hFhcThetaHi);
+  hsFhcThetaHi->Add(hFhcThetaHi_nuwro);
+  hsFhcThetaHi->Write();
+  Ratio rFhcTheta(predFhcTheta.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcTheta.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcTheta0(predFhcTheta0.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcTheta0.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcTheta1(predFhcTheta1.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcTheta1.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcTheta2(predFhcTheta2.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcTheta2.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcTheta3(predFhcTheta3.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcTheta3.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  Ratio rFhcThetaHi(predFhcThetaHi.PredictSyst(0, kNoShift).FakeData(pot_nd), predFhcThetaHi.PredictSyst(0, fakedatashift).FakeData(pot_nd));
+  TH1 *hrFhcTheta   = rFhcTheta.ToTH1();  
+  TH1 *hrFhcTheta0  = rFhcTheta0.ToTH1();  
+  TH1 *hrFhcTheta1  = rFhcTheta1.ToTH1();  
+  TH1 *hrFhcTheta2  = rFhcTheta2.ToTH1();  
+  TH1 *hrFhcTheta3  = rFhcTheta3.ToTH1();  
+  TH1 *hrFhcThetaHi = rFhcThetaHi.ToTH1();  
+  setHistAttr(hrFhcTheta);  
+  setHistAttr(hrFhcTheta0);  
+  setHistAttr(hrFhcTheta1);  
+  setHistAttr(hrFhcTheta2);  
+  setHistAttr(hrFhcTheta3);  
+  setHistAttr(hrFhcThetaHi);  
+  hrFhcTheta->SetTitle("Inclusive; #theta_{#mu, reco}; GENIE/NuWro");
+  hrFhcTheta0->SetTitle("0#pi; #theta_{#mu, reco}; GENIE/NuWro");
+  hrFhcTheta1->SetTitle("1#pi; #theta_{#mu, reco}; GENIE/NuWro");
+  hrFhcTheta2->SetTitle("2#pi; #theta_{#mu, reco}; GENIE/NuWro");
+  hrFhcTheta3->SetTitle("3#pi; #theta_{#mu, reco}; GENIE/NuWro");
+  hrFhcThetaHi->SetTitle(">3#pi; #theta_{#mu, reco}; GENIE/NuWro");
+  hrFhcTheta->Write("hrFhcTheta");
+  hrFhcTheta0->Write("hrFhcTheta0");
+  hrFhcTheta1->Write("hrFhcTheta1");
+  hrFhcTheta2->Write("hrFhcTheta2");
+  hrFhcTheta3->Write("hrFhcTheta3");
+  hrFhcThetaHi->Write("hrFhcThetaHi");
+  // Normalise to unity for better comparison
+  hFhcTheta->Scale(1./hFhcTheta->Integral());
+  hFhcTheta0->Scale(1./hFhcTheta0->Integral());
+  hFhcTheta1->Scale(1./hFhcTheta1->Integral());
+  hFhcTheta2->Scale(1./hFhcTheta2->Integral());
+  hFhcTheta3->Scale(1./hFhcTheta3->Integral());
+  hFhcThetaHi->Scale(1./hFhcThetaHi->Integral());
+  hFhcTheta_nuwro->Scale(1./hFhcTheta_nuwro->Integral());
+  hFhcTheta0_nuwro->Scale(1./hFhcTheta0_nuwro->Integral());
+  hFhcTheta1_nuwro->Scale(1./hFhcTheta1_nuwro->Integral());
+  hFhcTheta2_nuwro->Scale(1./hFhcTheta2_nuwro->Integral());
+  hFhcTheta3_nuwro->Scale(1./hFhcTheta3_nuwro->Integral());
+  hFhcThetaHi_nuwro->Scale(1./hFhcThetaHi_nuwro->Integral());
+  hFhcTheta->Divide(hFhcTheta_nuwro);
+  hFhcTheta0->Divide(hFhcTheta0_nuwro);
+  hFhcTheta1->Divide(hFhcTheta1_nuwro);
+  hFhcTheta2->Divide(hFhcTheta2_nuwro);
+  hFhcTheta3->Divide(hFhcTheta3_nuwro);
+  hFhcThetaHi->Divide(hFhcThetaHi_nuwro);
+  hFhcTheta->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcTheta0->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcTheta1->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcTheta2->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcTheta3->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcThetaHi->GetYaxis()->SetTitle("GENIE/NuWro");
+  hFhcTheta->Write("hrFhcThetaNorm");
+  hFhcTheta0->Write("hrFhcTheta0Norm");
+  hFhcTheta1->Write("hrFhcTheta1Norm");
+  hFhcTheta2->Write("hrFhcTheta2Norm");
+  hFhcTheta3->Write("hrFhcTheta3Norm");
+  hFhcThetaHi->Write("hrFhcThetaHiNorm");
+
   // Nominal samples
   TH1 *hnumuFHC_lead   = predGArNumuFHC_lead.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hnumuFHC0_lead  = predGArNumuFHC0_lead.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
