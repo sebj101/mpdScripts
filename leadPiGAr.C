@@ -73,7 +73,7 @@ const double pot_fd = years * POT120 * 40/1.13;
 const double pot_nd = years * POT120;
 // Vars
 const Var kPiplmult  = SIMPLEVAR(dune.gastpc_pi_pl_mult);
-const Var KPiminmult = SIMPLEVAR(dune.gastpc_pi_min_mult);
+const Var kPiminmult = SIMPLEVAR(dune.gastpc_pi_min_mult);
 const Var kRecoChargedPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult);
 const Var kRecoPi        = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult) + SIMPLEVAR(dune.gastpc_pi_0_mult);
 const Var kP             = SIMPLEVAR(dune.nP);
