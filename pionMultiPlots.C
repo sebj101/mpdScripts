@@ -57,79 +57,81 @@ void setHistAttr(TH2 *h2)
   h2->SetOption("colz");
 }
 
+const double mmu = 0.10566; // GeV/c^2
+
+// ND vars
+// Reco X
+const Var kRecoX({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
+		 [](const caf::StandardRecord* sr) {
+		   double x = 0;
+		   x = (4 * sr->dune.Ev_reco * sr->dune.Elep_reco * TMath::Sin(sr->dune.theta_reco/2.) * TMath::Sin(sr->dune.theta_reco/2.)) / (2 * 0.939 * (sr->dune.Ev_reco - sr->dune.Elep_reco));
+		   return x;
+		 });
+// Reco Q2
+const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
+		  [](const caf::StandardRecord* sr) {
+		    double pmu = sqrt(sr->dune.Elep_reco*sr->dune.Elep_reco - mmu*mmu);
+		    double q2 = 2 * sr->dune.Ev_reco * (sr->dune.Elep_reco - pmu*TMath::Cos(sr->dune.theta_reco)) - mmu*mmu;
+		    return q2;
+		  });
+// Reco W
+const Var kRecoW({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
+		 [](const caf::StandardRecord* sr) {
+		   double q2 = 2 * sr->dune.Ev_reco * (sr->dune.Elep_reco - pmu*TMath::Cos(sr->dune.theta_reco)) - mmu*mmu;
+		   double w = TMath::Sqrt(-q2 + 2 * 0.939 * (sr->dune.Ev_reco-sr->dune.Elep_reco) + 0.939*0.939);
+		   return w;
+		 });
+const Var kRecoEnergyND  = SIMPLEVAR(dune.Ev_reco);
+// const Var kRecoYND       = (SIMPLEVAR(dune.Ev_reco)-SIMPLEVAR(dune.Elep_reco))/SIMPLEVAR(dune.Ev_reco);
+const Var kTrueYND       = (SIMPLEVAR(dune.Ev)-SIMPLEVAR(dune.LepE))/SIMPLEVAR(dune.Ev);
+const Var kTrueEnergy    = SIMPLEVAR(dune.Ev);
+const Var kTrueLepEnergy = SIMPLEVAR(dune.LepE);
+const Var kNPi = SIMPLEVAR(dune.nipip) + SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipi0);
+const Var kQ2  = SIMPLEVAR(dune.Q2);
+const Var kW   = SIMPLEVAR(dune.W);
+const Var kFHC = SIMPLEVAR(dune.isFHC);
+const Var Enu_reco_numu = SIMPLEVAR(dune.Ev_reco_numu);
+const Var Enu_reco_nue  = SIMPLEVAR(dune.Ev_reco_nue);
+const Var isCC = SIMPLEVAR(dune.isCC);
+const Var kRecoPipl      = SIMPLEVAR(dune.gastpc_pi_pl_mult);
+const Var kRecoPimin     = SIMPLEVAR(dune.gastpc_pi_min_mult);
+const Var kRecoPi0       = SIMPLEVAR(dune.gastpc_pi_0_mult);
+const Var kRecoChargedPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult);
+const Var kRecoPi        = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult) + SIMPLEVAR(dune.gastpc_pi_0_mult);
+const Var kThetaReco = SIMPLEVAR(dune.theta_reco);
+const Var kLepPDG    = SIMPLEVAR(dune.LepPDG);
+
+// Energy bin edges
+std::vector<double> binEEdges = {0., 0.5, 1., 1.25, 1.5, 1.75,
+				 2., 2.25, 2.5, 2.75, 
+				 3., 3.25, 3.5, 3.75, 
+				 4., 5., 6., 10.};
+// Y bin edges
+std::vector<double> binYEdges = {0, 0.1, 0.2, 0.3, 0.4, 0.6, 1.0};
+const Binning binsEreco  = Binning::Custom(binEEdges);
+const Binning simpleBins   = Binning::Simple(20, 0, 5);
+const Binning simpleWBins  = Binning::Simple(30, 0, 3.);
+const Binning simpleQ2Bins = Binning::Simple(30, 0, 3.);
+const HistAxis axND("E_{#nu, reco} (GeV)", binsEreco, kRecoEnergyND);
+const HistAxis axTrueRecoND("E_{#nu, true} (GeV)", simpleBins, kTrueEnergy,
+			    "E_{#nu, reco} (GeV)", simpleBins, kRecoEnergyND);
+const HistAxis axQ2("Q^{2} (GeV)^{2}", simpleQ2Bins, kQ2);
+const HistAxis axW("W (GeV)", simpleWBins, kW);
+const HistAxis axRecoQ2("Q^{2} (GeV)^{2}", simpleQ2Bins, kRecoQ2);
+const HistAxis axRecoW("W (GeV)", simpleWBins, kRecoW);
+const HistAxis axisnumu("Reco #nu energy (GeV)", binsEreco, Enu_reco_numu);
+const HistAxis axisnue("Reco #nu energy (GeV)", binsEreco, Enu_reco_nue);
+// POT for 3.5 years
+const double years = 1.;
+const double pot_fd = years * POT120 * 40/1.13;
+const double pot_nd = years * POT120;
+
 void pionMultiPlots(const char *outFile, bool doLAr=false, 
 		    const char *lardir="/pnfs/dune/persistent/users/picker24/CAFv4/", 
 		    const char *gardir="/dune/data/users/sbjones/gasTpcCAF/v2/") 
 {
   gROOT->SetBatch(kTRUE);
   rootlogon();
-
-  // ND vars
-  // Reco X
-  const Var kRecoX({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
-		   [](const caf::StandardRecord* sr) {
-		     double x = 0;
-		     x = (4 * sr->dune.Ev_reco * sr->dune.Elep_reco * TMath::Sin(sr->dune.theta_reco/2.) * TMath::Sin(sr->dune.theta_reco/2.)) / (2 * 0.939 * (sr->dune.Ev_reco - sr->dune.Elep_reco));
-		     return x;
-		   });
-  // Reco Q2
-  const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
-		    [](const caf::StandardRecord* sr) {
-		      double q2 = 0;
-		      q2 = 4 * sr->dune.Elep_reco *TMath::Sin(sr->dune.theta_reco/2.) * TMath::Sin(sr->dune.theta_reco/2.) *sr->dune.Ev_reco;
-		      return q2;
-		    });
-  // Reco W
-  const Var kRecoW({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
-		   [](const caf::StandardRecord* sr) {
-		     double w = 0;
-		     double q2 = 4 * sr->dune.Elep_reco *TMath::Sin(sr->dune.theta_reco/2.) * TMath::Sin(sr->dune.theta_reco/2.) *sr->dune.Ev_reco;
-		     w = TMath::Sqrt(-q2 + 2 * 0.939 * (sr->dune.Ev_reco-sr->dune.Elep_reco) + 0.939*0.939);
-		     return w;
-		   });
-  const Var kRecoEnergyND  = SIMPLEVAR(dune.Ev_reco);
-  // const Var kRecoYND       = (SIMPLEVAR(dune.Ev_reco)-SIMPLEVAR(dune.Elep_reco))/SIMPLEVAR(dune.Ev_reco);
-  const Var kTrueYND       = (SIMPLEVAR(dune.Ev)-SIMPLEVAR(dune.LepE))/SIMPLEVAR(dune.Ev);
-  const Var kTrueEnergy    = SIMPLEVAR(dune.Ev);
-  const Var kTrueLepEnergy = SIMPLEVAR(dune.LepE);
-  const Var kNPi = SIMPLEVAR(dune.nipip) + SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipi0);
-  const Var kQ2  = SIMPLEVAR(dune.Q2);
-  const Var kW   = SIMPLEVAR(dune.W);
-  const Var kFHC = SIMPLEVAR(dune.isFHC);
-  const Var Enu_reco_numu = SIMPLEVAR(dune.Ev_reco_numu);
-  const Var Enu_reco_nue  = SIMPLEVAR(dune.Ev_reco_nue);
-  const Var isCC = SIMPLEVAR(dune.isCC);
-  const Var kPiplmult  = SIMPLEVAR(dune.gastpc_pi_pl_mult);
-  const Var KPiminmult = SIMPLEVAR(dune.gastpc_pi_min_mult);
-  const Var kRecoChargedPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult);
-  const Var kRecoPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult) + SIMPLEVAR(dune.gastpc_pi_0_mult);
-  const Var kThetaReco = SIMPLEVAR(dune.theta_reco);
-  // CV weighting
-  //const Var kGENIEWeights = SIMPLEVAR(dune.total_xsSyst_cv_wgt);
-
-  std::vector<double> binEEdges = {0., 0.5, 1., 1.25, 1.5, 1.75,
-				   2., 2.25, 2.5, 2.75, 
-				   3., 3.25, 3.5, 3.75, 
-				   4., 5., 6., 10.};
-  std::vector<double> binYEdges = {0, 0.1, 0.2, 0.3, 0.4, 0.6, 1.0};
-  const Binning binsEreco  = Binning::Custom(binEEdges);
-  const Binning simpleBins   = Binning::Simple(20, 0, 5);
-  const Binning simpleWBins  = Binning::Simple(30, 0, 6);
-  const Binning simpleQ2Bins = Binning::Simple(30, 0, 6);
-  const HistAxis axND("E_{#nu, reco} (GeV)", binsEreco, kRecoEnergyND);
-  const HistAxis axTrueRecoND("E_{#nu, true} (GeV)", simpleBins, kTrueEnergy,
-			      "E_{#nu, reco} (GeV)", simpleBins, kRecoEnergyND);
-  const HistAxis axQ2("Q^{2} (GeV)^{2}", simpleQ2Bins, kQ2);
-  const HistAxis axW("W (GeV)", simpleWBins, kW);
-  const HistAxis axRecoQ2("Q^{2} (GeV)^{2}", simpleQ2Bins, kRecoQ2);
-  const HistAxis axRecoW("W (GeV)", simpleWBins, kRecoW);
-  const HistAxis axisnumu("Reco #nu energy (GeV)", binsEreco, Enu_reco_numu);
-  const HistAxis axisnue("Reco #nu energy (GeV)", binsEreco, Enu_reco_nue);
-  // POT for 3.5 years
-  const double pot_fd = 3.5 * POT120 * 40/1.13;
-  const double pot_nd = 3.5 * POT120;
-  // This is pretty annoying, but the above is for 7 years staged, which is 336 kT MW yr
-  const double nom_exposure = 336.;
 
   osc::IOscCalculatorAdjustable* this_calc = NuFitOscCalc(1);
   
@@ -326,6 +328,23 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
   PredictionInterp predQ2GArCC2PiRHC(systlist, this_calc, Q2GArCC2Pi, loadersGArRHC);
   PredictionInterp predQ2GArCC3PiRHC(systlist, this_calc, Q2GArCC3Pi, loadersGArRHC);
 
+  // Additional GAr samples to match CM's 
+  // All reco W and Q2
+  // True categories
+  // CC inclusive
+  NoOscPredictionGenerator Q2True(axRecoQ2, isCC==1 && kFHC==1 && kLepPDG==13 && kIsTrueGasFV);
+  // 0 pi
+
+  // 1 charged pion
+
+  // 1 neutral pion
+
+  // 2 pions
+
+  // More than 3 pions
+
+  // Reco categories
+
   loadersGArFHC.Go();
   loadersGArRHC.Go();
   if (doLAr) {
@@ -333,6 +352,8 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
     loadersLArRHC.Go();
   }
   std::cout<<systlist.size()<<std::endl;
+  assert(systlist.size()==1);
+
   if (doLAr) {
     TH2 *h2LAr           = predLAr.Predict(0).ToTH2(pot_nd);
     setHistAttr(h2LAr);
