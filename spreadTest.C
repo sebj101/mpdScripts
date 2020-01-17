@@ -1,0 +1,478 @@
+// spreadTest.C
+// Test out method for calculating error bars based upon confusion matrices
+// Use CM's categories as a first past
+
+#include "CAFAna/Prediction/PredictionInterp.h"
+#include "CAFAna/Core/SpectrumLoader.h"
+#include "CAFAna/Core/Spectrum.h"
+#include "CAFAna/Core/Binning.h"
+#include "CAFAna/Core/Var.h"
+#include "CAFAna/Core/Loaders.h"
+#include "CAFAna/Core/Progress.h"
+#include "CAFAna/Core/Ratio.h"
+#include "CAFAna/Cuts/TruthCuts.h"
+#include "CAFAna/Cuts/AnaCuts.h"
+#include "CAFAna/Prediction/PredictionNoExtrap.h"
+#include "CAFAna/Prediction/PredictionNoOsc.h"
+#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/func/OscCalculatorPMNSOpt.h"
+#include "StandardRecord/StandardRecord.h"
+#include "CAFAna/Systs/XSecSysts.h"
+#include "CAFAna/Analysis/AnalysisVars.h"
+#include "CAFAna/Analysis/Calcs.h"
+#include "CAFAna/Analysis/CalcsNuFit.h"
+#include "CAFAna/Analysis/Exposures.h"
+#include "CAFAna/Analysis/common_fit_definitions.h"
+// ROOT includes
+#include "TCanvas.h"
+#include "TFile.h"
+#include "THStack.h"
+
+#include "Utilities/rootlogon.C"
+
+void setHistAttr(TH1 *h) 
+{
+  h->GetXaxis()->SetTitleSize(.05);
+  h->GetXaxis()->SetLabelSize(.05);
+  h->GetYaxis()->SetTitleSize(.05);
+  h->GetYaxis()->SetLabelSize(.05);
+  h->SetMarkerStyle(8);
+  h->SetLineWidth(2);
+  h->SetOption("hist");
+}
+
+void setHistAttr(TH2 *h2) 
+{
+  h2->GetXaxis()->SetTitleSize(.05);
+  h2->GetXaxis()->SetLabelSize(.05);
+  h2->GetYaxis()->SetTitleSize(.05);
+  h2->GetYaxis()->SetLabelSize(.05);
+  h2->GetZaxis()->SetTitleSize(.05);
+  h2->GetZaxis()->SetLabelSize(.05);
+  h2->SetOption("colz");
+}
+
+std::string catName(const int cat)
+{
+  std::string name;
+  if (cat==1) name="0#pi";
+  else if (cat==2) name="1#pi^{#pm}";
+  else if (cat==3) name="1#pi^{0}";
+  else if (cat==4) name="2#pi";
+  else if (cat==5) name="Other";
+  return name;
+}
+
+void makeConfusionMatrix(TH2* h2)
+{
+  for (int binX=1; binX<h2->GetNbinsX()+1; binX++) {
+    double colInt       = h2->Integral(binX, binX, 0, h2->GetNbinsY()+1);
+    for (int binY=1; binY<h2->GetNbinsY()+1; binY++) {
+      h2->SetBinContent(binX, binY, h2->GetBinContent(binX, binY) / colInt);
+    }
+  }
+}
+
+void doHistStuff (TH1* h, const char* name, const char* title)
+{
+  setHistAttr(h);
+  h->SetTitle(title);
+  h->Write(name);
+}
+
+TH1D* ratioSuppressLowStats(TH1 *hgenie, TH1* hnuwro, const char* name, const char* title, 
+			    const double inputPOT, const double truePOT)
+{
+  assert(hgenie->GetNbinsX() == hnuwro->GetNbinsX());
+  TH1D *hout = new TH1D(name, title, hgenie->GetNbinsX(), 0., 3.);
+  for (int i=1; i<hgenie->GetNbinsX()+1; i++) {
+    if (hgenie->GetBinContent(i) * (truePOT/inputPOT) < 100.) {
+      // Set bin content to 0
+      hgenie->SetBinContent(i, 0);
+      hgenie->SetBinError(i, 0);
+      hnuwro->SetBinContent(i, 0);
+      hnuwro->SetBinError(i, 0);
+    }
+  }
+  hout->Divide(hnuwro, hgenie, 1., 1.);
+  setHistAttr(hout);
+  hout->Write();
+  return hout;
+}
+
+using namespace ana;
+
+// POT for n years
+const double years = 1.; // of POT
+const double pot_fd = years * POT120 * 40/1.13;
+const double pot_nd = years * POT120;
+// True MC files POT
+const double fhcPOT = 1.9342e20;
+const double rhcPOT = 3.9302e20;
+
+const double mmu = 0.10566; // GeV/c^2
+
+// Vars
+// Reconstructed particle multiplicities
+const Var kPiplmult  = SIMPLEVAR(dune.gastpc_pi_pl_mult);
+const Var kPiminmult = SIMPLEVAR(dune.gastpc_pi_min_mult);
+const Var kRecoChargedPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult);
+const Var kRecoPi        = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult) + SIMPLEVAR(dune.gastpc_pi_0_mult);
+const Var kRecoP         = SIMPLEVAR(dune.gastpc_pro_mult);
+const Var kRecoOtherHad  = SIMPLEVAR(dune.gastpc_other_had_mult); 
+const Var kRecoHad       = SIMPLEVAR(dune.gastpc_pi_pl_mult)+SIMPLEVAR(dune.gastpc_pi_min_mult)+SIMPLEVAR(dune.gastpc_pro_mult)+SIMPLEVAR(dune.gastpc_other_had_mult);
+// True particle multiplicities
+const Var kPipl      = SIMPLEVAR(dune.nipip);
+const Var kPimin     = SIMPLEVAR(dune.nipim);
+const Var kChargedPi = SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipip);
+const Var kPi        = SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipip) + SIMPLEVAR(dune.nipi0);
+const Var kP         = SIMPLEVAR(dune.nP);
+const Var kOther     = SIMPLEVAR(dune.niother) + SIMPLEVAR(dune.nNucleus);
+const Var kHad       = SIMPLEVAR(dune.nipip)+SIMPLEVAR(dune.nipim)+SIMPLEVAR(dune.nipi0)+SIMPLEVAR(dune.nikp)+SIMPLEVAR(dune.nikm)+SIMPLEVAR(dune.nik0)+SIMPLEVAR(dune.nP)+SIMPLEVAR(dune.nN)/*+SIMPLEVAR(dune.niother)+SIMPLEVAR(dune.nNucleus)*/;
+const Var kChargedHad = SIMPLEVAR(dune.nipip)+SIMPLEVAR(dune.nipim)+SIMPLEVAR(dune.nikp)+SIMPLEVAR(dune.nikm)+SIMPLEVAR(dune.nP);
+
+// Reco Q2
+const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
+		  [](const caf::StandardRecord* sr) {
+		    double pmu = sqrt(sr->dune.Elep_reco*sr->dune.Elep_reco - mmu*mmu);
+		    double q2 = 2 * sr->dune.Ev_reco * (sr->dune.Elep_reco - pmu*TMath::Cos(sr->dune.theta_reco)) - mmu*mmu;
+		    return q2;
+		  });
+// Reco W
+const Var kRecoW({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
+		 [](const caf::StandardRecord* sr) {
+		   double w = 0;
+		   double pmu = sqrt(sr->dune.Elep_reco*sr->dune.Elep_reco - mmu*mmu);
+		   double q2 = 2 * sr->dune.Ev_reco * (sr->dune.Elep_reco - pmu*TMath::Cos(sr->dune.theta_reco)) - mmu*mmu;
+		   w = TMath::Sqrt(-q2 + 2 * 0.939 * (sr->dune.Ev_reco-sr->dune.Elep_reco) + 0.939*0.939);
+		   return w;
+		 });
+
+// CM's categories
+const Var kRecoCategory({"dune.gastpc_pi_pl_mult", "dune.gastpc_pi_min_mult", "dune.gastpc_pi_0_mult"},
+			[](const caf::StandardRecord* sr) {
+			  int cat = -1;
+			  int nChargedPi = sr->dune.gastpc_pi_pl_mult + sr->dune.gastpc_pi_min_mult;
+			  int nPi = sr->dune.gastpc_pi_pl_mult + sr->dune.gastpc_pi_min_mult + sr->dune.gastpc_pi_0_mult;
+			  if (nPi==0) cat=1;
+			  else if (nChargedPi==1 && nPi==1) cat=2;
+			  else if (sr->dune.gastpc_pi_0_mult==1 && nPi==1) cat=3;
+			  else if (nPi==2) cat=4;
+			  else cat=5;
+			  return cat;
+			});
+
+const Var kTrueCategory({"dune.nipip", "dune.nipim", "dune.nipi0"},
+			[](const caf::StandardRecord* sr) {
+			  int cat = -1;
+			  int nChargedPi = sr->dune.nipip + sr->dune.nipim;
+			  int nPi = sr->dune.nipip + sr->dune.nipim + sr->dune.nipi0;
+			  if (nPi==0) cat=1;
+			  else if (nChargedPi==1 && nPi==1) cat=2;
+			  else if (sr->dune.nipi0==1 && nPi==1) cat=3;
+			  else if (nPi==2) cat=4;
+			  else cat=5;
+			  return cat;
+			});
+
+// HC
+const Var kFHC = SIMPLEVAR(dune.isFHC);
+
+const Binning binsCategory = Binning::Simple(5, 0.5, 5.5);
+const HistAxis axCategory("True category", binsCategory, kTrueCategory, 
+			  "Reco category", binsCategory, kRecoCategory);
+
+const Binning binsW  = Binning::Simple(15, 0., 3.);
+const Binning binsQ2 = Binning::Simple(15, 0., 3.);
+const HistAxis axRecoW ("W_{reco} / GeV", binsW, kRecoW);
+const HistAxis axRecoQ2("Q^{2}_{reco} / (GeV)^{2}", binsQ2, kRecoQ2);
+
+// Cuts used in this analysis for various true and reco categories
+// True selections
+const Cut kPassCat1({},
+		    [](const caf::StandardRecord* sr)
+		    {
+		      return (sr->dune.nipip + sr->dune.nipim + sr->dune.nipi0==0
+			      && abs(sr->dune.LepPDG)==13);
+		    });
+const Cut kPassCat2({},
+		    [](const caf::StandardRecord* sr)
+		    {
+		      return (sr->dune.nipip+sr->dune.nipim==1 && 
+			      sr->dune.nipip+sr->dune.nipim+sr->dune.nipi0==1
+			      && abs(sr->dune.LepPDG)==13);
+		    });
+const Cut kPassCat3({},
+		    [](const caf::StandardRecord* sr)
+		    {
+		      return (sr->dune.nipi0==1 && 
+			      sr->dune.nipip+sr->dune.nipim+sr->dune.nipi0==1
+			      && abs(sr->dune.LepPDG)==13);
+		    });
+const Cut kPassCat4({},
+		    [](const caf::StandardRecord*sr)
+		    {
+		      return (sr->dune.nipip+sr->dune.nipim+sr->dune.nipi0==2
+			      && abs(sr->dune.LepPDG)==13);
+		    });
+const Cut kPassCat5({},
+		    [](const caf::StandardRecord* sr)
+		    {
+		      return (sr->dune.nipip+sr->dune.nipim+sr->dune.nipi0>2 
+			      && abs(sr->dune.LepPDG)==13);
+		    });
+// Reco selections
+const Cut kPassRecoCat1({},
+			[](const caf::StandardRecord* sr)
+			{
+			  return (sr->dune.gastpc_pi_pl_mult+sr->dune.gastpc_pi_min_mult+sr->dune.gastpc_pi_0_mult==0);
+			});
+const Cut kPassRecoCat2({},
+			[](const caf::StandardRecord* sr)
+			{
+			  return (sr->dune.gastpc_pi_pl_mult+sr->dune.gastpc_pi_min_mult==1 && 
+				  sr->dune.gastpc_pi_pl_mult+sr->dune.gastpc_pi_min_mult+sr->dune.gastpc_pi_0_mult==1);
+			});
+const Cut kPassRecoCat3({},
+			[](const caf::StandardRecord* sr)
+			{
+			  return (sr->dune.gastpc_pi_0_mult==1 && 
+				  sr->dune.gastpc_pi_pl_mult+sr->dune.gastpc_pi_min_mult+sr->dune.gastpc_pi_0_mult==1);
+			});
+const Cut kPassRecoCat4({},
+			[](const caf::StandardRecord*sr)
+			{
+			  return (sr->dune.gastpc_pi_pl_mult+sr->dune.gastpc_pi_min_mult+sr->dune.gastpc_pi_0_mult==2);
+			});
+const Cut kPassRecoCat5({},
+			[](const caf::StandardRecord* sr)
+			{
+			  return (sr->dune.gastpc_pi_pl_mult+sr->dune.gastpc_pi_min_mult+sr->dune.gastpc_pi_0_mult>2);
+				  
+			});
+
+void spreadTest(const char *outfile, 
+		const char *garDir="/dune/data/users/sbjones/gasTpcCAF/v8/") 
+{
+  gROOT->SetBatch(kTRUE);
+  rootlogon();
+ 
+  osc::IOscCalculatorAdjustable* this_calc = NuFitOscCalc(1);
+
+  std::vector<const ISyst*> systlist = {};
+  std::vector<const ISyst*> fakedatavec = GetXSecSysts({"NuWroReweightFakeData"});
+  SystShifts fakedata(fakedatavec.at(fakedatavec.size()-1), 1);
+  systlist.insert(systlist.end(), fakedatavec.end()-1, fakedatavec.end());
+  for (unsigned int i=0; i<systlist.size(); i++) {
+    std::cout<<systlist[i]->ShortName()<<std::endl;
+  }
+
+  assert(systlist.size()==1);
+
+  Loaders loadersGArFHC;
+  Loaders loadersGArRHC;
+  SpectrumLoader loaderGArFHC(Form("%s/CAF_FHC.root", garDir), kBeam);
+  SpectrumLoader loaderGArRHC(Form("%s/CAF_RHC.root", garDir), kBeam);
+  loadersGArFHC.AddLoader(&loaderGArFHC, caf::kNEARDET, Loaders::kMC);
+  loadersGArRHC.AddLoader(&loaderGArRHC, caf::kNEARDET, Loaders::kMC);
+
+  // Reco vs true categories
+  NoOscPredictionGenerator genFhcCat(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV);
+  PredictionInterp predFhcCat(systlist, 0, genFhcCat, loadersGArFHC);
+  // True categories
+  NoOscPredictionGenerator genFhcQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV);
+  NoOscPredictionGenerator genFhcQ2Cat1(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat1);
+  NoOscPredictionGenerator genFhcQ2Cat2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genFhcQ2Cat3(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genFhcQ2Cat4(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat4);
+  NoOscPredictionGenerator genFhcQ2Cat5(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat5);
+  PredictionInterp predFhcQ2(systlist, 0, genFhcQ2, loadersGArFHC);
+  PredictionInterp predFhcQ2Cat1(systlist, 0, genFhcQ2Cat1, loadersGArFHC);
+  PredictionInterp predFhcQ2Cat2(systlist, 0, genFhcQ2Cat2, loadersGArFHC);
+  PredictionInterp predFhcQ2Cat3(systlist, 0, genFhcQ2Cat3, loadersGArFHC);
+  PredictionInterp predFhcQ2Cat4(systlist, 0, genFhcQ2Cat4, loadersGArFHC);
+  PredictionInterp predFhcQ2Cat5(systlist, 0, genFhcQ2Cat5, loadersGArFHC);
+  NoOscPredictionGenerator genFhcW(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV);
+  NoOscPredictionGenerator genFhcWCat1(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat1);
+  NoOscPredictionGenerator genFhcWCat2(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genFhcWCat3(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genFhcWCat4(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat4);
+  NoOscPredictionGenerator genFhcWCat5(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat5);
+  PredictionInterp predFhcW(systlist, 0, genFhcW, loadersGArFHC);
+  PredictionInterp predFhcWCat1(systlist, 0, genFhcWCat1, loadersGArFHC);
+  PredictionInterp predFhcWCat2(systlist, 0, genFhcWCat2, loadersGArFHC);
+  PredictionInterp predFhcWCat3(systlist, 0, genFhcWCat3, loadersGArFHC);
+  PredictionInterp predFhcWCat4(systlist, 0, genFhcWCat4, loadersGArFHC);
+  PredictionInterp predFhcWCat5(systlist, 0, genFhcWCat5, loadersGArFHC);
+  // Reco categories
+  NoOscPredictionGenerator genFhcQ2RecoCat1(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
+  NoOscPredictionGenerator genFhcQ2RecoCat2(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat2);
+  NoOscPredictionGenerator genFhcQ2RecoCat3(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat3);
+  NoOscPredictionGenerator genFhcQ2RecoCat4(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat4);
+  NoOscPredictionGenerator genFhcQ2RecoCat5(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat5);
+  PredictionInterp predFhcQ2RecoCat1(systlist, 0, genFhcQ2RecoCat1, loadersGArFHC);
+  PredictionInterp predFhcQ2RecoCat2(systlist, 0, genFhcQ2RecoCat2, loadersGArFHC);
+  PredictionInterp predFhcQ2RecoCat3(systlist, 0, genFhcQ2RecoCat3, loadersGArFHC);
+  PredictionInterp predFhcQ2RecoCat4(systlist, 0, genFhcQ2RecoCat4, loadersGArFHC);
+  PredictionInterp predFhcQ2RecoCat5(systlist, 0, genFhcQ2RecoCat5, loadersGArFHC);
+  NoOscPredictionGenerator genFhcWRecoCat1(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
+  NoOscPredictionGenerator genFhcWRecoCat2(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat2);
+  NoOscPredictionGenerator genFhcWRecoCat3(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat3);
+  NoOscPredictionGenerator genFhcWRecoCat4(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat4);
+  NoOscPredictionGenerator genFhcWRecoCat5(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat5);
+  PredictionInterp predFhcWRecoCat1(systlist, 0, genFhcWRecoCat1, loadersGArFHC);
+  PredictionInterp predFhcWRecoCat2(systlist, 0, genFhcWRecoCat2, loadersGArFHC);
+  PredictionInterp predFhcWRecoCat3(systlist, 0, genFhcWRecoCat3, loadersGArFHC);
+  PredictionInterp predFhcWRecoCat4(systlist, 0, genFhcWRecoCat4, loadersGArFHC);
+  PredictionInterp predFhcWRecoCat5(systlist, 0, genFhcWRecoCat5, loadersGArFHC);
+
+  loadersGArFHC.Go();
+  // loadersGArRHC.Go();
+
+  TFile *fout = new TFile(outfile, "recreate");
+  fout->cd();
+
+  // Reco vs. true categories
+  TH2 *h2Cat       = predFhcCat.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2Cat_nuwro = predFhcCat.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH2(pot_nd);
+  h2Cat->Scale(1. / h2Cat->Integral());
+  h2Cat_nuwro->Scale(1. / h2Cat_nuwro->Integral());
+  setHistAttr(h2Cat);
+  setHistAttr(h2Cat_nuwro);
+  h2Cat->SetTitle("True vs. reco final state in HPgTPC; True category; Reco category; Fraction of events");
+  h2Cat_nuwro->SetTitle("True vs. reco state in HPgTPC (NuWro shifts); True category; Reco category; Fraction of events");
+  for (int binX=1; binX<h2Cat->GetNbinsX()+1; binX++) {
+    h2Cat->GetXaxis()->SetBinLabel(binX, catName(binX).c_str());
+    h2Cat_nuwro->GetXaxis()->SetBinLabel(binX, catName(binX).c_str());
+    h2Cat->GetYaxis()->SetBinLabel(binX, catName(binX).c_str());
+    h2Cat_nuwro->GetYaxis()->SetBinLabel(binX, catName(binX).c_str());
+  }
+  h2Cat->Write("h2Cat");
+  h2Cat_nuwro->Write("h2Cat_nuwro");
+  makeConfusionMatrix(h2Cat);
+  makeConfusionMatrix(h2Cat_nuwro);
+  h2Cat->SetTitle("Final state confusion matrix in HPgTPC; True category; Reco category; Probability");
+  h2Cat_nuwro->SetTitle("Final state confusion matrix in HPgTPC (NuWro shifts); True category; Reco category; Probability");
+  h2Cat->Write("h2Cat_confus");
+  h2Cat_nuwro->Write("h2Cat_nuwro_confus");
+
+  // Now get the reco Q2 and reco W for the true and reco selections
+  TH1 *hFhcQ2     = predFhcQ2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat1 = predFhcQ2Cat1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat2 = predFhcQ2Cat2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat3 = predFhcQ2Cat3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat4 = predFhcQ2Cat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat5 = predFhcQ2Cat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2_n     = predFhcQ2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat1_n = predFhcQ2Cat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat2_n = predFhcQ2Cat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat3_n = predFhcQ2Cat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat4_n = predFhcQ2Cat4.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Cat5_n = predFhcQ2Cat5.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcW     = predFhcW.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat1 = predFhcWCat1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat2 = predFhcWCat2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat3 = predFhcWCat3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat4 = predFhcWCat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat5 = predFhcWCat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcW_n     = predFhcW.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat1_n = predFhcWCat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat2_n = predFhcWCat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat3_n = predFhcWCat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat4_n = predFhcWCat4.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWCat5_n = predFhcWCat5.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  doHistStuff(hFhcQ2,"hFhcQ2","CC inc.");
+  doHistStuff(hFhcQ2Cat1,"hFhcQ2Cat1","0#pi");
+  doHistStuff(hFhcQ2Cat2,"hFhcQ2Cat2","1#pi^{#pm}");
+  doHistStuff(hFhcQ2Cat3,"hFhcQ2Cat3","1#pi^{0}");
+  doHistStuff(hFhcQ2Cat4,"hFhcQ2Cat4","2#pi");
+  doHistStuff(hFhcQ2Cat5,"hFhcQ2Cat5",">2#pi");
+  doHistStuff(hFhcQ2_n,"hFhcQ2_n","CC inc.");
+  doHistStuff(hFhcQ2Cat1_n,"hFhcQ2Cat1_n","0#pi");
+  doHistStuff(hFhcQ2Cat2_n,"hFhcQ2Cat2_n","1#pi^{#pm}");
+  doHistStuff(hFhcQ2Cat3_n,"hFhcQ2Cat3_n","1#pi^{0}");
+  doHistStuff(hFhcQ2Cat4_n,"hFhcQ2Cat4_n","2#pi");
+  doHistStuff(hFhcQ2Cat5_n,"hFhcQ2Cat5_n",">2#pi");
+  doHistStuff(hFhcW,"hFhcW","CC inc.");
+  doHistStuff(hFhcWCat1,"hFhcWCat1","0#pi");
+  doHistStuff(hFhcWCat2,"hFhcWCat2","1#pi^{#pm}");
+  doHistStuff(hFhcWCat3,"hFhcWCat3","1#pi^{0}");
+  doHistStuff(hFhcWCat4,"hFhcWCat4","2#pi");
+  doHistStuff(hFhcWCat5,"hFhcWCat5",">2#pi");
+  doHistStuff(hFhcW_n,"hFhcW_n","CC inc.");
+  doHistStuff(hFhcWCat1_n,"hFhcWCat1_n","0#pi");
+  doHistStuff(hFhcWCat2_n,"hFhcWCat2_n","1#pi^{#pm}");
+  doHistStuff(hFhcWCat3_n,"hFhcWCat3_n","1#pi^{0}");
+  doHistStuff(hFhcWCat4_n,"hFhcWCat4_n","2#pi");
+  doHistStuff(hFhcWCat5_n,"hFhcWCat5_n",">2#pi");
+  TH1D *hrFhcQ2 = ratioSuppressLowStats(hFhcQ2, hFhcQ2_n, "hrFhcQ2", "CC inc.; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2Cat1 = ratioSuppressLowStats(hFhcQ2Cat1, hFhcQ2Cat1_n, "hrFhcQ2Cat1", "0#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2Cat2 = ratioSuppressLowStats(hFhcQ2Cat2, hFhcQ2Cat2_n, "hrFhcQ2Cat2", "1#pi^{#pm}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2Cat3 = ratioSuppressLowStats(hFhcQ2Cat3, hFhcQ2Cat3_n, "hrFhcQ2Cat3", "1#pi^{0}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2Cat4 = ratioSuppressLowStats(hFhcQ2Cat4, hFhcQ2Cat4_n, "hrFhcQ2Cat4", "2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2Cat5 = ratioSuppressLowStats(hFhcQ2Cat5, hFhcQ2Cat5_n, "hrFhcQ2Cat5", ">2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+
+  TH1D *hrFhcW = ratioSuppressLowStats(hFhcW, hFhcW_n, "hrFhcW", "CC inc.; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcWCat1 = ratioSuppressLowStats(hFhcWCat1, hFhcWCat1_n, "hrFhcWCat1", "0#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcWCat2 = ratioSuppressLowStats(hFhcWCat2, hFhcWCat2_n, "hrFhcWCat2", "1#pi^{#pm}; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcWCat3 = ratioSuppressLowStats(hFhcWCat3, hFhcWCat3_n, "hrFhcWCat3", "1#pi^{0}; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcWCat4 = ratioSuppressLowStats(hFhcWCat4, hFhcWCat4_n, "hrFhcWCat4", "2#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcWCat5 = ratioSuppressLowStats(hFhcWCat5, hFhcWCat5_n, "hrFhcWCat5", ">2#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+
+  // Reco selections
+  TH1 *hFhcQ2RecoCat1 = predFhcQ2RecoCat1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2RecoCat2 = predFhcQ2RecoCat2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2RecoCat3 = predFhcQ2RecoCat3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2RecoCat4 = predFhcQ2RecoCat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2RecoCat5 = predFhcQ2RecoCat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2RecoCat1_n = predFhcQ2RecoCat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2RecoCat2_n = predFhcQ2RecoCat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2RecoCat3_n = predFhcQ2RecoCat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2RecoCat4_n = predFhcQ2RecoCat4.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2RecoCat5_n = predFhcQ2RecoCat5.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat1 = predFhcWRecoCat1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat2 = predFhcWRecoCat2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat3 = predFhcWRecoCat3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat4 = predFhcWRecoCat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat5 = predFhcWRecoCat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat1_n = predFhcWRecoCat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat2_n = predFhcWRecoCat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat3_n = predFhcWRecoCat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat4_n = predFhcWRecoCat4.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcWRecoCat5_n = predFhcWRecoCat5.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  doHistStuff(hFhcQ2RecoCat1,"hFhcQ2RecoCat1","0#pi");
+  doHistStuff(hFhcQ2RecoCat2,"hFhcQ2RecoCat2","1#pi^{#pm}");
+  doHistStuff(hFhcQ2RecoCat3,"hFhcQ2RecoCat3","1#pi^{0}");
+  doHistStuff(hFhcQ2RecoCat4,"hFhcQ2RecoCat4","2#pi");
+  doHistStuff(hFhcQ2RecoCat5,"hFhcQ2RecoCat5",">2#pi");
+  doHistStuff(hFhcQ2RecoCat1_n,"hFhcQ2RecoCat1_n","0#pi");
+  doHistStuff(hFhcQ2RecoCat2_n,"hFhcQ2RecoCat2_n","1#pi^{#pm}");
+  doHistStuff(hFhcQ2RecoCat3_n,"hFhcQ2RecoCat3_n","1#pi^{0}");
+  doHistStuff(hFhcQ2RecoCat4_n,"hFhcQ2RecoCat4_n","2#pi");
+  doHistStuff(hFhcQ2RecoCat5_n,"hFhcQ2RecoCat5_n",">2#pi");
+  doHistStuff(hFhcWRecoCat1,"hFhcWRecoCat1","0#pi");
+  doHistStuff(hFhcWRecoCat2,"hFhcWRecoCat2","1#pi^{#pm}");
+  doHistStuff(hFhcWRecoCat3,"hFhcWRecoCat3","1#pi^{0}");
+  doHistStuff(hFhcWRecoCat4,"hFhcWRecoCat4","2#pi");
+  doHistStuff(hFhcWRecoCat5,"hFhcWRecoCat5",">2#pi");
+  doHistStuff(hFhcWRecoCat1_n,"hFhcWRecoCat1_n","0#pi");
+  doHistStuff(hFhcWRecoCat2_n,"hFhcWRecoCat2_n","1#pi^{#pm}");
+  doHistStuff(hFhcWRecoCat3_n,"hFhcWRecoCat3_n","1#pi^{0}");
+  doHistStuff(hFhcWRecoCat4_n,"hFhcWRecoCat4_n","2#pi");
+  doHistStuff(hFhcWRecoCat5_n,"hFhcWRecoCat5_n",">2#pi");
+
+  TH1D *hrFhcQ2RecoCat1 = ratioSuppressLowStats(hFhcQ2RecoCat1, hFhcQ2RecoCat1_n, "hrFhcQ2RecoCat1", "0#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2RecoCat2 = ratioSuppressLowStats(hFhcQ2RecoCat2, hFhcQ2RecoCat2_n, "hrFhcQ2RecoCat2", "1#pi^{#pm}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2RecoCat3 = ratioSuppressLowStats(hFhcQ2RecoCat3, hFhcQ2RecoCat3_n, "hrFhcQ2RecoCat3", "1#pi^{0}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2RecoCat4 = ratioSuppressLowStats(hFhcQ2RecoCat4, hFhcQ2RecoCat4_n, "hrFhcQ2RecoCat4", "2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2RecoCat5 = ratioSuppressLowStats(hFhcQ2RecoCat5, hFhcQ2RecoCat5_n, "hrFhcQ2RecoCat5", ">2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+
+  TH1D *hrFhcWRecoCat1 = ratioSuppressLowStats(hFhcWRecoCat1, hFhcWRecoCat1_n, "hrFhcWRecoCat1", "0#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcWRecoCat2 = ratioSuppressLowStats(hFhcWRecoCat2, hFhcWRecoCat2_n, "hrFhcWRecoCat2", "1#pi^{#pm}; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcWRecoCat3 = ratioSuppressLowStats(hFhcWRecoCat3, hFhcWRecoCat3_n, "hrFhcWRecoCat3", "1#pi^{0}; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcWRecoCat4 = ratioSuppressLowStats(hFhcWRecoCat4, hFhcWRecoCat4_n, "hrFhcWRecoCat4", "2#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcWRecoCat5 = ratioSuppressLowStats(hFhcWRecoCat5, hFhcWRecoCat5_n, "hrFhcWRecoCat5", ">2#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+
+  fout->Close();
+  delete fout;
+} // spreadTest
