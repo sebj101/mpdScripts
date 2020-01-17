@@ -61,6 +61,16 @@ std::string catName(const int cat)
   return name;
 }
 
+void makeConfusionMatrix(TH2* h2)
+{
+  for (int binX=1; binX<h2->GetNbinsX()+1; binX++) {
+    double colInt       = h2->Integral(binX, binX, 0, h2->GetNbinsY()+1);
+    for (int binY=1; binY<h2->GetNbinsY()+1; binY++) {
+      h2->SetBinContent(binX, binY, h2->GetBinContent(binX, binY) / colInt);
+    }
+  }
+}
+
 using namespace ana;
 
 // POT for n years
@@ -75,7 +85,7 @@ const Var kRecoChargedPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.ga
 const Var kRecoPi        = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult) + SIMPLEVAR(dune.gastpc_pi_0_mult);
 const Var kRecoP         = SIMPLEVAR(dune.gastpc_pro_mult);
 const Var kRecoOtherHad  = SIMPLEVAR(dune.gastpc_other_had_mult); 
-const Var kRecoHad       = SIMPLEVAR(dune.gastpc_pi_pl_mult)+SIMPLEVAR(dune.gastpc_pi_min_mult)+SIMPLEVAR(dune.gastpc_pi_0_mult)+SIMPLEVAR(dune.gastpc_pro_mult)+SIMPLEVAR(dune.gastpc_other_had_mult);
+const Var kRecoHad       = SIMPLEVAR(dune.gastpc_pi_pl_mult)+SIMPLEVAR(dune.gastpc_pi_min_mult)+SIMPLEVAR(dune.gastpc_pro_mult)+SIMPLEVAR(dune.gastpc_other_had_mult);
 
 // True particle multiplicities
 const Var kPipl      = SIMPLEVAR(dune.nipip);
@@ -85,6 +95,7 @@ const Var kPi        = SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipip) + SIMPLEVAR
 const Var kP         = SIMPLEVAR(dune.nP);
 const Var kOther     = SIMPLEVAR(dune.niother) + SIMPLEVAR(dune.nNucleus);
 const Var kHad       = SIMPLEVAR(dune.nipip)+SIMPLEVAR(dune.nipim)+SIMPLEVAR(dune.nipi0)+SIMPLEVAR(dune.nikp)+SIMPLEVAR(dune.nikm)+SIMPLEVAR(dune.nik0)+SIMPLEVAR(dune.nP)+SIMPLEVAR(dune.nN)/*+SIMPLEVAR(dune.niother)+SIMPLEVAR(dune.nNucleus)*/;
+const Var kChargedHad = SIMPLEVAR(dune.nipip)+SIMPLEVAR(dune.nipim)+SIMPLEVAR(dune.nikp)+SIMPLEVAR(dune.nikm)+SIMPLEVAR(dune.nP);
 
 // CM's categories
 const Var kRecoCategory({"dune.gastpc_pi_pl_mult", "dune.gastpc_pi_min_mult", "dune.gastpc_pi_0_mult"},
@@ -119,6 +130,9 @@ const Var kFHC = SIMPLEVAR(dune.isFHC);
 const Binning binsHadron = Binning::Simple(10, -0.5, 9.5);
 const HistAxis axTrueRecoHad("N_{had, true}", binsHadron, kHad,
 			     "N_{had, reco}", binsHadron, kRecoHad);
+
+const HistAxis axTrueRecoCHad("N_{had, true}", binsHadron, kChargedHad,
+				    "N_{had, reco}", binsHadron, kRecoHad);
 
 const Binning binsParticle = Binning::Simple(6, -0.5, 5.5);
 const HistAxis axTrueRecoPi("N_{#pi, true}", binsParticle, kPi,
@@ -161,6 +175,9 @@ void migrationMatrices(const char *outfile,
   // Reco vs true hadron multiplicities
   NoOscPredictionGenerator genFhcHad(axTrueRecoHad, kPassND_FHC_NUMU && kIsTrueGasFV);
   PredictionInterp predFhcHad(systlist, 0, genFhcHad, loadersGArFHC);
+  // True vs reco charged hadron multiplicities
+  NoOscPredictionGenerator genFhcCHad(axTrueRecoCHad, kPassND_FHC_NUMU && kIsTrueGasFV);
+  PredictionInterp predFhcCHad(systlist, 0, genFhcCHad, loadersGArFHC);
   // Reco vs true categories
   NoOscPredictionGenerator genFhcCat(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV);
   PredictionInterp predFhcCat(systlist, 0, genFhcCat, loadersGArFHC);
@@ -297,6 +314,17 @@ void migrationMatrices(const char *outfile,
   h2Had_nuwro_confus->SetTitle("Hadron multiplicity confusion matrix in HPgTPC (NuWro shifts); N_{had, true}; N_{had, reco}; Probability");
   h2Had_confus->Write("h2Had_confus");
   h2Had_nuwro_confus->Write("h2Had_nuwro_confus");
+
+  TH2 *h2CHad_confus       = predFhcCHad.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2CHad_nuwro_confus = predFhcCHad.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH2(pot_nd);
+  makeConfusionMatrix(h2CHad_confus);
+  makeConfusionMatrix(h2CHad_nuwro_confus);
+  setHistAttr(h2CHad_confus);
+  setHistAttr(h2CHad_nuwro_confus);
+  h2CHad_confus->SetTitle("Charged hadron multiplicity confusion matrix in HPgTPC; N_{had, true}; N_{had, reco}; Probability");
+  h2CHad_nuwro_confus->SetTitle("Charged hadron multiplicity confusion matrix in HPgTPC (NuWro shifts); N_{had, true}; N_{had, reco}; Probability");
+  h2CHad_confus->Write("h2CHad_confus");
+  h2CHad_nuwro_confus->Write("h2CHad_nuwro_confus");
 
   fout->Close();
 } // migrationMatrices
