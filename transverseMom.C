@@ -79,6 +79,8 @@ const Var kRecoTotalFSMomX = SIMPLEVAR(dune.gastpc_RecoLepMomX) + SIMPLEVAR(dune
 const Var kRecoTotalFSMomY = SIMPLEVAR(dune.gastpc_RecoLepMomY) + SIMPLEVAR(dune.gastpc_RecoProMomY);
 const Var kRecoTotalFSMomZ = SIMPLEVAR(dune.gastpc_RecoLepMomZ) + SIMPLEVAR(dune.gastpc_RecoProMomZ);
 
+const Var kMode = SIMPLEVAR(dune.mode);
+
 // Reco transverse mom
 const Var kRecoTransMomAng({"dune.gastpc_RecoLepMomX", "dune.gastpc_RecoLepMomY", "dune.gastpc_RecoProMomX", "dune.gastpc_RecoProMomY"},
 			   [](const caf::StandardRecord* sr) {
@@ -219,7 +221,7 @@ void transverseMom(const char* outFile, const char* garDir="/dune/data/users/sbj
   PredictionInterp predRecoLepMomXFhc({}, 0, genRecoLepMomXFhc, loadersGArFHC);
   PredictionInterp predRecoLepMomYFhc({}, 0, genRecoLepMomYFhc, loadersGArFHC);
   PredictionInterp predRecoLepMomZFhc({}, 0, genRecoLepMomZFhc, loadersGArFHC);
-
+  // Transverse momentum variables
   NoOscPredictionGenerator genRecoTransMomMag(axRecoTransMomMag, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1);
   NoOscPredictionGenerator genRecoTransMomAng(axRecoTransMomAng, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1);
   NoOscPredictionGenerator genTransMomMag(axTransMomMag, kIsTrueGasFV && kProMomX!=0);
@@ -228,6 +230,48 @@ void transverseMom(const char* outFile, const char* garDir="/dune/data/users/sbj
   PredictionInterp predRecoTransMomAng({}, 0, genRecoTransMomAng, loadersGArFHC);
   PredictionInterp predTransMomMag({}, 0, genTransMomMag, loadersGArFHC);
   PredictionInterp predTransMomAng({}, 0, genTransMomAng, loadersGArFHC);
+
+  // Split up by interaction mode -- reco only
+  /// Modes list:
+  /// * QE: 1
+  /// * Single Kaon: 2
+  /// * DIS: 3
+  /// * RES: 4
+  /// * COH: 5
+  /// * Diffractive: 6
+  /// * Nu-e El: 7
+  /// * IMD: 8
+  /// * AMnuGamma: 9
+  /// * MEC: 10
+  /// * COHEl: 11
+  /// * IBD: 12
+  /// * GlashowRES: 13
+  /// * IMDAnnihalation: 14
+  // QE
+  NoOscPredictionGenerator genRecoTransMomMag_qe(axRecoTransMomMag, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==1);
+  NoOscPredictionGenerator genRecoTransMomAng_qe(axRecoTransMomAng, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==1);
+  PredictionInterp predRecoTransMomMag_qe({}, 0, genRecoTransMomMag_qe, loadersGArFHC);
+  PredictionInterp predRecoTransMomAng_qe({}, 0, genRecoTransMomAng_qe, loadersGArFHC);
+  // DIS
+  NoOscPredictionGenerator genRecoTransMomMag_dis(axRecoTransMomMag, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==3);
+  NoOscPredictionGenerator genRecoTransMomAng_dis(axRecoTransMomAng, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==3);
+  PredictionInterp predRecoTransMomMag_dis({}, 0, genRecoTransMomMag_dis, loadersGArFHC);
+  PredictionInterp predRecoTransMomAng_dis({}, 0, genRecoTransMomAng_dis, loadersGArFHC);
+  // RES
+  NoOscPredictionGenerator genRecoTransMomMag_res(axRecoTransMomMag, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==4);
+  NoOscPredictionGenerator genRecoTransMomAng_res(axRecoTransMomAng, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==4);
+  PredictionInterp predRecoTransMomMag_res({}, 0, genRecoTransMomMag_res, loadersGArFHC);
+  PredictionInterp predRecoTransMomAng_res({}, 0, genRecoTransMomAng_res, loadersGArFHC);
+  // COH
+  NoOscPredictionGenerator genRecoTransMomMag_coh(axRecoTransMomMag, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==5);
+  NoOscPredictionGenerator genRecoTransMomAng_coh(axRecoTransMomAng, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==5);
+  PredictionInterp predRecoTransMomMag_coh({}, 0, genRecoTransMomMag_coh, loadersGArFHC);
+  PredictionInterp predRecoTransMomAng_coh({}, 0, genRecoTransMomAng_coh, loadersGArFHC);
+  // MEC
+  NoOscPredictionGenerator genRecoTransMomMag_mec(axRecoTransMomMag, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==10);
+  NoOscPredictionGenerator genRecoTransMomAng_mec(axRecoTransMomAng, kIsTrueGasFV && kPassND_FHC_NUMU && kNRecoFS==2 && kRecoP==1 && kMode==10);
+  PredictionInterp predRecoTransMomMag_mec({}, 0, genRecoTransMomMag_mec, loadersGArFHC);
+  PredictionInterp predRecoTransMomAng_mec({}, 0, genRecoTransMomAng_mec, loadersGArFHC);
 
   loadersGArFHC.Go();
   // loadersGArRHC.Go();
@@ -308,6 +352,94 @@ void transverseMom(const char* outFile, const char* garDir="/dune/data/users/sbj
   hRecoTransMomAng->Write("hRecoTransMomAng");
   hTransMomMag->Write("hTransMomMag");
   hTransMomAng->Write("hTransMomAng");
+
+  THStack *hsTransMomMag = new THStack("hsTransMomMag", Form("Reconstructed transverse momentum magnitude in HPgTPC (FHC): %.2g years; |p_{T}| / GeV; Events", years));
+  hRecoTransMomMag->SetLineColor(kRed);
+  hsTransMomMag->Add(hTransMomMag);
+  hsTransMomMag->Add(hRecoTransMomMag);
+  hsTransMomMag->Write();
+  THStack *hsTransMomAng = new THStack("hsTransMomAng", Form("Reconstructed transverse momentum angle in HPgTPC (FHC): %.2g years; #delta#alpha_{T} / radians; Events", years));
+  hRecoTransMomAng->SetLineColor(kRed);
+  hsTransMomAng->Add(hTransMomAng);
+  hsTransMomAng->Add(hRecoTransMomAng);
+  hsTransMomAng->Write();
+
+  // Separate out by true interaction mode
+  THStack *hsRecoTransMomMag_mode = new THStack("hsRecoTransMomMag_mode", Form("Reconstructed transverse momentum magnitude in HPgTPC (FHC): %.2g years; |p_{T, reco}| / GeV; Events", years));
+  THStack *hsRecoTransMomAng_mode = new THStack("hsRecoTransMomAng_mode", Form("Reconstructed transverse momentum angle in HPgTPC (FHC): %.2g years; #delta#alpha_{T, reco} / radians; Events", years));
+  TH1 *hRecoTransMomMag_coh = predRecoTransMomMag_coh.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRecoTransMomAng_coh = predRecoTransMomAng_coh.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  setHistAttr(hRecoTransMomMag_coh);
+  setHistAttr(hRecoTransMomAng_coh);
+  hRecoTransMomMag_coh->SetTitle("Coherent");
+  hRecoTransMomAng_coh->SetTitle("Coherent");
+  hRecoTransMomMag_coh->Write("hRecoTransMomMag_coh");
+  hRecoTransMomAng_coh->Write("hRecoTransMomAng_coh");
+  hRecoTransMomMag_coh->SetLineColor(kOrange+1);
+  hRecoTransMomMag_coh->SetFillColor(kOrange+1);
+  hRecoTransMomAng_coh->SetLineColor(kOrange+1);
+  hRecoTransMomAng_coh->SetFillColor(kOrange+1);
+  hsRecoTransMomMag_mode->Add(hRecoTransMomMag_coh);
+  hsRecoTransMomAng_mode->Add(hRecoTransMomAng_coh);
+  TH1 *hRecoTransMomMag_qe = predRecoTransMomMag_qe.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRecoTransMomAng_qe = predRecoTransMomAng_qe.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  setHistAttr(hRecoTransMomMag_qe);
+  setHistAttr(hRecoTransMomAng_qe);
+  hRecoTransMomMag_qe->SetTitle("QE");
+  hRecoTransMomAng_qe->SetTitle("QE");
+  hRecoTransMomMag_qe->Write("hRecoTransMomMag_qe");
+  hRecoTransMomAng_qe->Write("hRecoTransMomAng_qe");
+  hRecoTransMomMag_qe->SetLineColor(kBlack);
+  hRecoTransMomMag_qe->SetFillColor(kBlack);
+  hRecoTransMomAng_qe->SetLineColor(kBlack);
+  hRecoTransMomAng_qe->SetFillColor(kBlack);
+  hsRecoTransMomMag_mode->Add(hRecoTransMomMag_qe);
+  hsRecoTransMomAng_mode->Add(hRecoTransMomAng_qe);
+  TH1 *hRecoTransMomMag_mec = predRecoTransMomMag_mec.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRecoTransMomAng_mec = predRecoTransMomAng_mec.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  setHistAttr(hRecoTransMomMag_mec);
+  setHistAttr(hRecoTransMomAng_mec);
+  hRecoTransMomMag_mec->SetTitle("MEC");
+  hRecoTransMomAng_mec->SetTitle("MEC");
+  hRecoTransMomMag_mec->Write("hRecoTransMomMag_mec");
+  hRecoTransMomAng_mec->Write("hRecoTransMomAng_mec");
+  hRecoTransMomMag_mec->SetLineColor(kGreen+2);
+  hRecoTransMomMag_mec->SetFillColor(kGreen+2);
+  hRecoTransMomAng_mec->SetLineColor(kGreen+2);
+  hRecoTransMomAng_mec->SetFillColor(kGreen+2);
+  hsRecoTransMomMag_mode->Add(hRecoTransMomMag_mec);
+  hsRecoTransMomAng_mode->Add(hRecoTransMomAng_mec);
+  TH1 *hRecoTransMomMag_res = predRecoTransMomMag_res.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRecoTransMomAng_res = predRecoTransMomAng_res.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  setHistAttr(hRecoTransMomMag_res);
+  setHistAttr(hRecoTransMomAng_res);
+  hRecoTransMomMag_res->SetTitle("Resonant");
+  hRecoTransMomAng_res->SetTitle("Resonant");
+  hRecoTransMomMag_res->Write("hRecoTransMomMag_res");
+  hRecoTransMomAng_res->Write("hRecoTransMomAng_res");
+  hRecoTransMomMag_res->SetLineColor(kRed);
+  hRecoTransMomMag_res->SetFillColor(kRed);
+  hRecoTransMomAng_res->SetLineColor(kRed);
+  hRecoTransMomAng_res->SetFillColor(kRed);
+  hsRecoTransMomMag_mode->Add(hRecoTransMomMag_res);
+  hsRecoTransMomAng_mode->Add(hRecoTransMomAng_res);
+  TH1 *hRecoTransMomMag_dis = predRecoTransMomMag_dis.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRecoTransMomAng_dis = predRecoTransMomAng_dis.Predict(0).FakeData(pot_nd).ToTH1(pot_nd);
+  setHistAttr(hRecoTransMomMag_dis);
+  setHistAttr(hRecoTransMomAng_dis);
+  hRecoTransMomMag_dis->SetTitle("DIS");
+  hRecoTransMomAng_dis->SetTitle("DIS");
+  hRecoTransMomMag_dis->Write("hRecoTransMomMag_dis");
+  hRecoTransMomAng_dis->Write("hRecoTransMomAng_dis");
+  hRecoTransMomMag_dis->SetLineColor(kBlue);
+  hRecoTransMomMag_dis->SetFillColor(kBlue);
+  hRecoTransMomAng_dis->SetLineColor(kBlue);
+  hRecoTransMomAng_dis->SetFillColor(kBlue);
+  hsRecoTransMomMag_mode->Add(hRecoTransMomMag_dis);
+  hsRecoTransMomAng_mode->Add(hRecoTransMomAng_dis);
+
+  hsRecoTransMomMag_mode->Write();
+  hsRecoTransMomAng_mode->Write();
 
   fout->Close();
   delete fout;
