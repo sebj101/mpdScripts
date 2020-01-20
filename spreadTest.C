@@ -27,6 +27,7 @@
 #include "TCanvas.h"
 #include "TFile.h"
 #include "THStack.h"
+#include "TLine.h"
 
 #include "Utilities/rootlogon.C"
 
@@ -98,6 +99,74 @@ TH1D* ratioSuppressLowStats(TH1 *hgenie, TH1* hnuwro, const char* name, const ch
   setHistAttr(hout);
   hout->Write();
   return hout;
+}
+
+int colourFromCat(const int cat) 
+{
+  int col=0;
+  if (cat<1 || cat>5) {
+    std::cout<<"Invalid category!!!"<<std::endl;
+  }
+  if (cat==1) col = 632; // kRed
+  else if (cat==2) col = 600; // kBlue
+  else if (cat==3) col = 417; // kGreen+1
+  else if (cat==4) col = 618; // kMagenta+2
+  else if (cat==5) col = 802; // kOrange+2
+  else col=1; // kBlack
+
+  return col;
+}
+
+THStack* makeCatStack(const std::vector<TH1*> hvec, const char* name, const char* title)
+{
+  THStack *hs = new THStack(name, title);
+  assert(hvec.size()==5);
+  for (unsigned int i=0; i<hvec.size(); i++) {
+    // Create clones of the histograms to preserve original formatting
+    TH1D *h = (TH1D*)hvec.at(i)->Clone("h");
+    h->SetLineColor(colourFromCat(i+1));
+    h->SetMarkerColor(colourFromCat(i+1));
+    hs->Add(h);
+  }
+  return hs;
+}
+
+TH1D* ratioWithSpread(const char* name, const char* title, 
+		      const std::vector<TH1*> hNReco, const std::vector<TH1*> hGReco, 
+		      const std::vector<TH1*> hNTrue, const std::vector<TH1*> hGTrue,
+		      const TH2* matrix, const int cat)
+{
+  if (cat<1 || cat>5) std::cout<<"Category is invalid!!!"<<std::endl;
+
+  std::vector<TH1D*> rTvec;
+  for (int i=1; i<=5; i++) {
+    TH1D *tT = new TH1D(Form("tT%s%d",name,i), "", hNReco.at(i-1)->GetNbinsX(), 0., hNReco.at(i-1)->GetXaxis()->GetBinLowEdge(hNReco.at(i-1)->GetNbinsX()+1));
+    tT->Divide(hNTrue.at(i-1), hGTrue.at(i-1));
+    rTvec.push_back(tT);
+  }
+  TH1D *hr = new TH1D(name, title, hNReco.at(cat-1)->GetNbinsX(), 0., hNReco.at(cat-1)->GetXaxis()->GetBinLowEdge(hNReco.at(cat-1)->GetNbinsX()+1));
+  
+  for (int i=1; i<=hNReco.at(cat-1)->GetNbinsX(); i++) {
+    double num = hNReco.at(cat-1)->GetBinContent(i);
+    double denom = hGReco.at(cat-1)->GetBinContent(i);
+    if (denom * (1.9342e20/1e21) < 100.) continue;
+    // if (denom < 1000.) continue;
+    // Get error from the spread in the smearing
+    double true_cv = rTvec.at(cat-1)->GetBinContent(i);
+    double spread = 0.;
+    double norm = matrix->ProjectionX("", cat, cat)->Integral(1, 5);
+    for (int j=1; j<=5; j++) {
+      double diff = rTvec.at(j-1)->GetBinContent(i) - true_cv;
+      // Fraction of reco events from this true category
+      double smear_wgt = matrix->GetBinContent(j, cat) / norm;
+      spread += smear_wgt * pow(diff, 2);
+    }
+    spread = sqrt(spread);
+    hr->SetBinContent(i, num/denom);
+    hr->SetBinError(i, spread);
+  }
+
+  return hr;
 }
 
 using namespace ana;
@@ -411,6 +480,14 @@ void spreadTest(const char *outfile,
   TH1D *hrFhcQ2Cat3 = ratioSuppressLowStats(hFhcQ2Cat3, hFhcQ2Cat3_n, "hrFhcQ2Cat3", "1#pi^{0}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcQ2Cat4 = ratioSuppressLowStats(hFhcQ2Cat4, hFhcQ2Cat4_n, "hrFhcQ2Cat4", "2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcQ2Cat5 = ratioSuppressLowStats(hFhcQ2Cat5, hFhcQ2Cat5_n, "hrFhcQ2Cat5", ">2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  std::vector<TH1*> fhcQ2Vec;
+  fhcQ2Vec.push_back(hrFhcQ2Cat1);
+  fhcQ2Vec.push_back(hrFhcQ2Cat2);
+  fhcQ2Vec.push_back(hrFhcQ2Cat3);
+  fhcQ2Vec.push_back(hrFhcQ2Cat4);
+  fhcQ2Vec.push_back(hrFhcQ2Cat5);
+  THStack *hsFhcQ2 = makeCatStack(fhcQ2Vec, "hsFhcQ2", "NuWro/GENIE for various true final states; Q^{2}_{reco} / GeV^{2}; NuWro/GENIE");
+  hsFhcQ2->Write();
 
   TH1D *hrFhcW = ratioSuppressLowStats(hFhcW, hFhcW_n, "hrFhcW", "CC inc.; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcWCat1 = ratioSuppressLowStats(hFhcWCat1, hFhcWCat1_n, "hrFhcWCat1", "0#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
@@ -418,6 +495,41 @@ void spreadTest(const char *outfile,
   TH1D *hrFhcWCat3 = ratioSuppressLowStats(hFhcWCat3, hFhcWCat3_n, "hrFhcWCat3", "1#pi^{0}; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcWCat4 = ratioSuppressLowStats(hFhcWCat4, hFhcWCat4_n, "hrFhcWCat4", "2#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcWCat5 = ratioSuppressLowStats(hFhcWCat5, hFhcWCat5_n, "hrFhcWCat5", ">2#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  std::vector<TH1*> fhcWVec;
+  fhcWVec.push_back(hrFhcWCat1);
+  fhcWVec.push_back(hrFhcWCat2);
+  fhcWVec.push_back(hrFhcWCat3);
+  fhcWVec.push_back(hrFhcWCat4);
+  fhcWVec.push_back(hrFhcWCat5);
+  THStack *hsFhcW = makeCatStack(fhcWVec, "hsFhcW", "NuWro/GENIE for various true final states; W_{reco} / GeV; NuWro/GENIE");
+  hsFhcW->Write();
+ 
+  // Clear these and put the non ratio plots in
+  fhcWVec.clear();
+  fhcWVec.push_back(hFhcWCat1);
+  fhcWVec.push_back(hFhcWCat2);
+  fhcWVec.push_back(hFhcWCat3);
+  fhcWVec.push_back(hFhcWCat4);
+  fhcWVec.push_back(hFhcWCat5);
+  fhcQ2Vec.clear();
+  fhcQ2Vec.push_back(hFhcQ2Cat1);
+  fhcQ2Vec.push_back(hFhcQ2Cat2);
+  fhcQ2Vec.push_back(hFhcQ2Cat3);
+  fhcQ2Vec.push_back(hFhcQ2Cat4);
+  fhcQ2Vec.push_back(hFhcQ2Cat5);
+
+  std::vector<TH1*> fhcWVec_n;
+  fhcWVec_n.push_back(hFhcWCat1_n);
+  fhcWVec_n.push_back(hFhcWCat2_n);
+  fhcWVec_n.push_back(hFhcWCat3_n);
+  fhcWVec_n.push_back(hFhcWCat4_n);
+  fhcWVec_n.push_back(hFhcWCat5_n);
+  std::vector<TH1*> fhcQ2Vec_n;
+  fhcQ2Vec_n.push_back(hFhcQ2Cat1_n);
+  fhcQ2Vec_n.push_back(hFhcQ2Cat2_n);
+  fhcQ2Vec_n.push_back(hFhcQ2Cat3_n);
+  fhcQ2Vec_n.push_back(hFhcQ2Cat4_n);
+  fhcQ2Vec_n.push_back(hFhcQ2Cat5_n);
 
   // Reco selections
   TH1 *hFhcQ2RecoCat1 = predFhcQ2RecoCat1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
@@ -466,12 +578,99 @@ void spreadTest(const char *outfile,
   TH1D *hrFhcQ2RecoCat3 = ratioSuppressLowStats(hFhcQ2RecoCat3, hFhcQ2RecoCat3_n, "hrFhcQ2RecoCat3", "1#pi^{0}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcQ2RecoCat4 = ratioSuppressLowStats(hFhcQ2RecoCat4, hFhcQ2RecoCat4_n, "hrFhcQ2RecoCat4", "2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcQ2RecoCat5 = ratioSuppressLowStats(hFhcQ2RecoCat5, hFhcQ2RecoCat5_n, "hrFhcQ2RecoCat5", ">2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  std::vector<TH1*> fhcQ2RecoVec;
+  fhcQ2RecoVec.push_back(hrFhcQ2RecoCat1);
+  fhcQ2RecoVec.push_back(hrFhcQ2RecoCat2);
+  fhcQ2RecoVec.push_back(hrFhcQ2RecoCat3);
+  fhcQ2RecoVec.push_back(hrFhcQ2RecoCat4);
+  fhcQ2RecoVec.push_back(hrFhcQ2RecoCat5);
+  THStack *hsFhcQ2Reco = makeCatStack(fhcQ2RecoVec, "hsFhcQ2Reco", "NuWro/GENIE for various reconstructed final states; Q^{2}_{reco} / GeV^{2}; NuWro/GENIE");
+  hsFhcQ2Reco->Write();
 
   TH1D *hrFhcWRecoCat1 = ratioSuppressLowStats(hFhcWRecoCat1, hFhcWRecoCat1_n, "hrFhcWRecoCat1", "0#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcWRecoCat2 = ratioSuppressLowStats(hFhcWRecoCat2, hFhcWRecoCat2_n, "hrFhcWRecoCat2", "1#pi^{#pm}; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcWRecoCat3 = ratioSuppressLowStats(hFhcWRecoCat3, hFhcWRecoCat3_n, "hrFhcWRecoCat3", "1#pi^{0}; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcWRecoCat4 = ratioSuppressLowStats(hFhcWRecoCat4, hFhcWRecoCat4_n, "hrFhcWRecoCat4", "2#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
   TH1D *hrFhcWRecoCat5 = ratioSuppressLowStats(hFhcWRecoCat5, hFhcWRecoCat5_n, "hrFhcWRecoCat5", ">2#pi; W_{reco} / GeV; NuWro/GENIE", pot_nd, fhcPOT);
+  std::vector<TH1*> fhcWRecoVec;
+  fhcWRecoVec.push_back(hrFhcWRecoCat1);
+  fhcWRecoVec.push_back(hrFhcWRecoCat2);
+  fhcWRecoVec.push_back(hrFhcWRecoCat3);
+  fhcWRecoVec.push_back(hrFhcWRecoCat4);
+  fhcWRecoVec.push_back(hrFhcWRecoCat5);
+  THStack *hsFhcWReco = makeCatStack(fhcWRecoVec, "hsFhcWReco", "NuWro/GENIE for various reconstructed final states; W_{reco} / GeV; NuWro/GENIE");
+  hsFhcWReco->Write();
+
+  fhcWRecoVec.clear();
+  fhcWRecoVec.push_back(hFhcWRecoCat1);
+  fhcWRecoVec.push_back(hFhcWRecoCat2);
+  fhcWRecoVec.push_back(hFhcWRecoCat3);
+  fhcWRecoVec.push_back(hFhcWRecoCat4);
+  fhcWRecoVec.push_back(hFhcWRecoCat5);
+  fhcQ2RecoVec.clear();
+  fhcQ2RecoVec.push_back(hFhcQ2RecoCat1);
+  fhcQ2RecoVec.push_back(hFhcQ2RecoCat2);
+  fhcQ2RecoVec.push_back(hFhcQ2RecoCat3);
+  fhcQ2RecoVec.push_back(hFhcQ2RecoCat4);
+  fhcQ2RecoVec.push_back(hFhcQ2RecoCat5);
+
+  std::vector<TH1*> fhcWRecoVec_n;
+  fhcWRecoVec_n.push_back(hFhcWRecoCat1_n);
+  fhcWRecoVec_n.push_back(hFhcWRecoCat2_n);
+  fhcWRecoVec_n.push_back(hFhcWRecoCat3_n);
+  fhcWRecoVec_n.push_back(hFhcWRecoCat4_n);
+  fhcWRecoVec_n.push_back(hFhcWRecoCat5_n);
+  std::vector<TH1*> fhcQ2RecoVec_n;
+  fhcQ2RecoVec_n.push_back(hFhcQ2RecoCat1_n);
+  fhcQ2RecoVec_n.push_back(hFhcQ2RecoCat2_n);
+  fhcQ2RecoVec_n.push_back(hFhcQ2RecoCat3_n);
+  fhcQ2RecoVec_n.push_back(hFhcQ2RecoCat4_n);
+  fhcQ2RecoVec_n.push_back(hFhcQ2RecoCat5_n);
+
+  // Make the same plots with the better errors
+
+  TH1D* hrFhcQ2RecoCat1_spread = ratioWithSpread("hrFhcQ2RecoCat1_spread", "0#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 1);
+  TH1D* hrFhcQ2RecoCat2_spread = ratioWithSpread("hrFhcQ2RecoCat2_spread", "1#pi^{#pm}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 2);
+  TH1D* hrFhcQ2RecoCat3_spread = ratioWithSpread("hrFhcQ2RecoCat3_spread", "1#pi^{0}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 3);
+  TH1D* hrFhcQ2RecoCat4_spread = ratioWithSpread("hrFhcQ2RecoCat4_spread", "2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 4);
+  TH1D* hrFhcQ2RecoCat5_spread = ratioWithSpread("hrFhcQ2RecoCat5_spread", ">2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 5);
+  doHistStuff(hrFhcQ2RecoCat1_spread, "hrFhcQ2RecoCat1_spread", "0#pi");
+  doHistStuff(hrFhcQ2RecoCat2_spread, "hrFhcQ2RecoCat2_spread", "1#pi^{#pm}");
+  doHistStuff(hrFhcQ2RecoCat3_spread, "hrFhcQ2RecoCat3_spread", "1#pi^{0}");
+  doHistStuff(hrFhcQ2RecoCat4_spread, "hrFhcQ2RecoCat4_spread", "2#pi");
+  doHistStuff(hrFhcQ2RecoCat5_spread, "hrFhcQ2RecoCat5_spread", ">2#pi");
+  std::vector<TH1*> fhcQ2RecoVec_spread;
+  fhcQ2RecoVec_spread.push_back(hrFhcQ2RecoCat1_spread);
+  fhcQ2RecoVec_spread.push_back(hrFhcQ2RecoCat2_spread);
+  fhcQ2RecoVec_spread.push_back(hrFhcQ2RecoCat3_spread);
+  fhcQ2RecoVec_spread.push_back(hrFhcQ2RecoCat4_spread);
+  fhcQ2RecoVec_spread.push_back(hrFhcQ2RecoCat5_spread);
+  THStack *hsFhcQ2Reco_spread = makeCatStack(fhcQ2RecoVec_spread, "hsFhcQ2Reco_spread", "NuWro/GENIE for various reconstructed final states; Q^{2}_{reco} / GeV; NuWro/GENIE");
+  hsFhcQ2Reco_spread->Write();
+
+  TH1D* hrFhcWRecoCat1_spread = ratioWithSpread("hrFhcWRecoCat1_spread", "0#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 1);
+  TH1D* hrFhcWRecoCat2_spread = ratioWithSpread("hrFhcWRecoCat2_spread", "1#pi^{#pm}; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 2);
+  TH1D* hrFhcWRecoCat3_spread = ratioWithSpread("hrFhcWRecoCat3_spread", "1#pi^{0}; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 3);
+  TH1D* hrFhcWRecoCat4_spread = ratioWithSpread("hrFhcWRecoCat4_spread", "2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 4);
+  TH1D* hrFhcWRecoCat5_spread = ratioWithSpread("hrFhcWRecoCat5_spread", ">2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 5);
+  doHistStuff(hrFhcWRecoCat1_spread, "hrFhcWRecoCat1_spread", "0#pi");
+  doHistStuff(hrFhcWRecoCat2_spread, "hrFhcWRecoCat2_spread", "1#pi^{#pm}");
+  doHistStuff(hrFhcWRecoCat3_spread, "hrFhcWRecoCat3_spread", "1#pi^{0}");
+  doHistStuff(hrFhcWRecoCat4_spread, "hrFhcWRecoCat4_spread", "2#pi");
+  doHistStuff(hrFhcWRecoCat5_spread, "hrFhcWRecoCat5_spread", ">2#pi");
+  std::vector<TH1*> fhcWRecoVec_spread;
+  fhcWRecoVec_spread.push_back(hrFhcWRecoCat1_spread);
+  fhcWRecoVec_spread.push_back(hrFhcWRecoCat2_spread);
+  fhcWRecoVec_spread.push_back(hrFhcWRecoCat3_spread);
+  fhcWRecoVec_spread.push_back(hrFhcWRecoCat4_spread);
+  fhcWRecoVec_spread.push_back(hrFhcWRecoCat5_spread);
+  THStack *hsFhcWReco_spread = makeCatStack(fhcWRecoVec_spread, "hsFhcWReco_spread", "NuWro/GENIE for various reconstructed final states; W_{reco} / GeV; NuWro/GENIE");
+  hsFhcWReco_spread->Write();
+
+  TLine *l = new TLine(0., 1., 3., 1.);
+  l->SetLineStyle(2);
+  l->SetLineWidth(2);
+  l->Write("l");
 
   fout->Close();
   delete fout;
