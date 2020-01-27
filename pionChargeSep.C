@@ -108,7 +108,9 @@ const Var kRecoP         = SIMPLEVAR(dune.gastpc_pro_mult);
 const Var kRecoOtherHad  = SIMPLEVAR(dune.gastpc_other_had_mult); 
 const Var kPi   = SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipip) + SIMPLEVAR(dune.nipi0);
 const Var kFHC   = SIMPLEVAR(dune.isFHC);
+const Var kNumu = SIMPLEVAR(dune.reco_numu);
 const double mmu = 0.10566; // GeV/c^2
+
 
 // Reco Q2
 const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
@@ -162,30 +164,30 @@ void pionChargeSep(const char *outfile, const char *garDir="/dune/data/users/sbj
   loadersGArRHC.AddLoader(&loaderGArRHC, caf::kNEARDET, Loaders::kMC);
 
   // FHC
-  NoOscPredictionGenerator genQ2_1Pipl(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPipl==1 && kRecoPi==1);
-  NoOscPredictionGenerator genQ2_1Pimin(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPimin==1 && kRecoPi==1);
-  NoOscPredictionGenerator genQ2_1Pi0(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi0==1 && kRecoPi==1);
+  NoOscPredictionGenerator genQ2_1Pipl(axRecoQ2, kNumu==1 && kIsTrueGasFV && kRecoPipl==1 && kRecoPi==1);
+  NoOscPredictionGenerator genQ2_1Pimin(axRecoQ2, kNumu==1 && kIsTrueGasFV && kRecoPimin==1 && kRecoPi==1);
+  NoOscPredictionGenerator genQ2_1Pi0(axRecoQ2, kNumu==1 && kIsTrueGasFV && kRecoPi0==1 && kRecoPi==1);
   PredictionInterp predQ2_1Pipl(systlist, 0, genQ2_1Pipl, loadersGArFHC);
   PredictionInterp predQ2_1Pimin(systlist, 0, genQ2_1Pimin, loadersGArFHC);
   PredictionInterp predQ2_1Pi0(systlist, 0, genQ2_1Pi0, loadersGArFHC);
 
-  NoOscPredictionGenerator genW_1Pipl(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPipl==1 && kRecoPi==1);
-  NoOscPredictionGenerator genW_1Pimin(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPimin==1 && kRecoPi==1);
-  NoOscPredictionGenerator genW_1Pi0(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi0==1 && kRecoPi==1);
+  NoOscPredictionGenerator genW_1Pipl(axRecoW, kNumu==1 && kIsTrueGasFV && kRecoPipl==1 && kRecoPi==1);
+  NoOscPredictionGenerator genW_1Pimin(axRecoW, kNumu==1 && kIsTrueGasFV && kRecoPimin==1 && kRecoPi==1);
+  NoOscPredictionGenerator genW_1Pi0(axRecoW, kNumu==1 && kIsTrueGasFV && kRecoPi0==1 && kRecoPi==1);
   PredictionInterp predW_1Pipl(systlist, 0, genW_1Pipl, loadersGArFHC);
   PredictionInterp predW_1Pimin(systlist, 0, genW_1Pimin, loadersGArFHC);
   PredictionInterp predW_1Pi0(systlist, 0, genW_1Pi0, loadersGArFHC);
   // RHC
-  NoOscPredictionGenerator genQ2_1Pipl_rhc(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPipl==1 && kRecoPi==1);
-  NoOscPredictionGenerator genQ2_1Pimin_rhc(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPimin==1 && kRecoPi==1);
-  NoOscPredictionGenerator genQ2_1Pi0_rhc(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi0==1 && kRecoPi==1);
+  NoOscPredictionGenerator genQ2_1Pipl_rhc(axRecoQ2, kNumu==1 && kIsTrueGasFV && kRecoPipl==1 && kRecoPi==1);
+  NoOscPredictionGenerator genQ2_1Pimin_rhc(axRecoQ2, kNumu==1 && kIsTrueGasFV && kRecoPimin==1 && kRecoPi==1);
+  NoOscPredictionGenerator genQ2_1Pi0_rhc(axRecoQ2, kNumu==1 && kIsTrueGasFV && kRecoPi0==1 && kRecoPi==1);
   PredictionInterp predQ2_1Pipl_rhc(systlist, 0, genQ2_1Pipl, loadersGArRHC);
   PredictionInterp predQ2_1Pimin_rhc(systlist, 0, genQ2_1Pimin, loadersGArRHC);
   PredictionInterp predQ2_1Pi0_rhc(systlist, 0, genQ2_1Pi0, loadersGArRHC);
 
-  NoOscPredictionGenerator genW_1Pipl_rhc(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPipl==1 && kRecoPi==1);
-  NoOscPredictionGenerator genW_1Pimin_rhc(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPimin==1 && kRecoPi==1);
-  NoOscPredictionGenerator genW_1Pi0_rhc(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kRecoPi0==1 && kRecoPi==1);
+  NoOscPredictionGenerator genW_1Pipl_rhc(axRecoW, kNumu==1 && kIsTrueGasFV && kRecoPipl==1 && kRecoPi==1);
+  NoOscPredictionGenerator genW_1Pimin_rhc(axRecoW, kNumu==1 && kIsTrueGasFV && kRecoPimin==1 && kRecoPi==1);
+  NoOscPredictionGenerator genW_1Pi0_rhc(axRecoW, kNumu==1 && kIsTrueGasFV && kRecoPi0==1 && kRecoPi==1);
   PredictionInterp predW_1Pipl_rhc(systlist, 0, genW_1Pipl, loadersGArRHC);
   PredictionInterp predW_1Pimin_rhc(systlist, 0, genW_1Pimin, loadersGArRHC);
   PredictionInterp predW_1Pi0_rhc(systlist, 0, genW_1Pi0, loadersGArRHC);
@@ -278,7 +280,7 @@ void pionChargeSep(const char *outfile, const char *garDir="/dune/data/users/sbj
   hrQ2_1Pimin->SetMarkerColor(kRed);
   hsQ2->Add(hrQ2_1Pipl);
   hsQ2->Add(hrQ2_1Pimin);
-  hsQ2->Add(hrQ2_1Pi0);
+  // hsQ2->Add(hrQ2_1Pi0);
   hsQ2->Write();
 
   THStack *hsW = new THStack("hsW", Form("Reconstructed W for HPgTPC: %.2g years POT; W_{reco} / GeV; NuWro / GENIE", years));
@@ -290,7 +292,7 @@ void pionChargeSep(const char *outfile, const char *garDir="/dune/data/users/sbj
   hrW_1Pimin->SetMarkerColor(kRed);
   hsW->Add(hrW_1Pipl);
   hsW->Add(hrW_1Pimin);
-  hsW->Add(hrW_1Pi0);
+  // hsW->Add(hrW_1Pi0);
   hsW->Write();
 
   // RHC
@@ -371,7 +373,7 @@ void pionChargeSep(const char *outfile, const char *garDir="/dune/data/users/sbj
   hrQ2_1Pimin_rhc->SetMarkerColor(kRed);
   hsQ2_rhc->Add(hrQ2_1Pipl_rhc);
   hsQ2_rhc->Add(hrQ2_1Pimin_rhc);
-  hsQ2_rhc->Add(hrQ2_1Pi0_rhc);
+  // hsQ2_rhc->Add(hrQ2_1Pi0_rhc);
   hsQ2_rhc->Write();
 
   THStack *hsW_rhc = new THStack("hsW_rhc", Form("Reconstructed W for HPgTPC (RHC): %.2g years POT; W_{reco} / GeV; NuWro / GENIE", years));
@@ -383,7 +385,7 @@ void pionChargeSep(const char *outfile, const char *garDir="/dune/data/users/sbj
   hrW_1Pimin_rhc->SetMarkerColor(kRed);
   hsW_rhc->Add(hrW_1Pipl_rhc);
   hsW_rhc->Add(hrW_1Pimin_rhc);
-  hsW_rhc->Add(hrW_1Pi0_rhc);
+  // hsW_rhc->Add(hrW_1Pi0_rhc);
   hsW_rhc->Write();
 
   fout->Close();
