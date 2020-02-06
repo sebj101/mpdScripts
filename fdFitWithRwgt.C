@@ -1,5 +1,8 @@
 // fdFitWithRwgt.C
 // Uses the new NuWro reweight syst (based upon the ND GAr data) to try and remove the delta CP bias
+#include "StandardRecord/StandardRecord.h"
+#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/func/OscCalculatorPMNSOpt.h"
 // CAFAna includes
 #include "CAFAna/Prediction/PredictionInterp.h"
 #include "CAFAna/Core/SpectrumLoader.h"
@@ -13,9 +16,6 @@
 #include "CAFAna/Cuts/AnaCuts.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Prediction/PredictionNoOsc.h"
-#include "OscLib/func/IOscCalculator.h"
-#include "OscLib/func/OscCalculatorPMNSOpt.h"
-#include "StandardRecord/StandardRecord.h"
 #include "CAFAna/Systs/XSecSysts.h"
 #include "CAFAna/Analysis/AnalysisVars.h"
 #include "CAFAna/Analysis/Calcs.h"
@@ -24,6 +24,7 @@
 #include "CAFAna/Analysis/Exposures.h"
 #include "CAFAna/Analysis/common_fit_definitions.h"
 #include "CAFAna/Analysis/Plots.h"
+#include "CAFAna/Experiment/ReactorExperiment.h"
 // // ROOT includes
 #include "TCanvas.h"
 #include "TFile.h"
@@ -151,6 +152,41 @@ THStack *dataMCWgtComp(const char* name, const char* title,
   return hs;
 }
 
+std::vector<double> fitPoint(MultiExperiment *exp, 
+			     std::vector<const IFitVar*> oscVars,
+			     std::vector<const ISyst*> systlist,
+			     osc::IOscCalculatorAdjustable *fitOsc, SystShifts fitSyst,
+			     ana::SeedList oscSeeds, osc::IOscCalculatorAdjustable *trueOsc)
+{
+  std::vector<double> params;
+  params.resize(oscVars.size()+2, 0); // Fit values + bias and chi^2
+
+  auto start_fit = std::chrono::system_clock::now();
+  Fitter fit(exp, oscVars, systlist);
+  double chisq = fit.Fit(fitOsc, fitSyst, oscSeeds, {}, Fitter::kVerbose);
+  auto end_fit = std::chrono::system_clock::now();
+  std::time_t end_fit_time = std::chrono::system_clock::to_time_t(end_fit);
+  std::cerr << "[FIT]: Finished fit in "
+	    << std::chrono::duration_cast<std::chrono::seconds>(end_fit -
+								start_fit).count()                     
+	    << " s after " << fit.GetNFCN() << " iterations "
+	    << BuildLogInfoString();
+  params.at(params.size()-1) = chisq;
+  std::vector<double> fPostFitValues   = fit.GetPostFitValues();
+  std::vector<std::string> fParamNames = fit.GetParamNames();
+  for (unsigned int i=0; i<oscVars.size(); i++) {
+    params.at(i) = fPostFitValues.at(i);
+    if (fParamNames.at(i) == "delta(pi)") {
+      double bias = (fPostFitValues.at(i)*TMath::Pi() - trueOsc->GetdCP())*(180./TMath::Pi());
+      if (bias<-180.) bias+=360.;
+      else if (bias>180.) bias-=360.;
+      params.at(i) = fPostFitValues.at(i)*180.;
+      params.at(params.size()-2) = bias;
+    }
+  }
+  return params;
+}
+
 // Variables
 const Var kTrueEnergy    = SIMPLEVAR(dune.Ev);
 const Var kTrueLepEnergy = SIMPLEVAR(dune.LepE);
@@ -188,9 +224,9 @@ std::map<const IFitVar*, std::vector<double>> oscSeeds = {};
 std::vector<double> theta23Seeds = {TMath::Sin(kNuFitTh23MaxNH)*TMath::Sin(kNuFitTh23MaxNH),
 				    TMath::Sin(kNuFitTh23MinNH)*TMath::Sin(kNuFitTh23MinNH)};
 // Seed both hierarchies
-std::vector<double> dmsq32Seeds  = {kNuFitDmsq32CVNH};//, kNuFitDmsq32CVIH}; 
+std::vector<double> dmsq32Seeds  = {kNuFitDmsq32CVNH, kNuFitDmsq32CVIH}; 
 // Seed minimal and maximal delta
-std::vector<double> deltaCPSeeds = {0., 0.5, 1., 1.5}; // Pi units
+std::vector<double> deltaCPSeeds = {0., 1.5}; // Pi units
 
 NuFitPenalizer penalty; // NuFit penalizer
 
@@ -204,25 +240,14 @@ void fdFitWithRwgt(const char* outfile,
   rootlogon();
 
   assert(firstPoint>=0 && firstPoint<=lastPoint && lastPoint<=nPoints);
-
-  oscSeeds.insert({&kFitSinSqTheta23, theta23Seeds});
+  const ReactorExperiment* th13 = WorldReactorConstraint2017();
+  // oscSeeds.insert({&kFitSinSqTheta23, theta23Seeds});
   // oscSeeds.insert({&kFitDmSq32, dmsq32Seeds});
   // oscSeeds.insert({&kFitDeltaInPiUnits, deltaCPSeeds});
 
-  osc::IOscCalculatorAdjustable* this_calc = /*DefaultOscCalc();*/NuFitOscCalc(1);
-  // this_calc->SetTh13(kNuFitTh13CVNH);  
-  // this_calc->SetTh23(kNuFitTh23CVNH);  
-  // this_calc->SetDmsq21(kNuFitDmsq21CV);
-  // this_calc->SetDmsq32(kNuFitDmsq32CVNH);
-  // this_calc->SetL(kBaseline);
-  // this_calc->SetRho(kEarthDensity);
+  osc::IOscCalculatorAdjustable* this_calc = NuFitOscCalc(1);
 
   std::vector<const ISyst*> systlist = GetListOfSysts(true, true, 
-						      true, false, true,
-						      false, false,
-						      false, 20, 
-						      true);
-  std::vector<const ISyst*> fitsysts = GetListOfSysts(true, true, 
 						      true, false, true,
 						      false, false,
 						      false, 20, 
@@ -234,7 +259,6 @@ void fdFitWithRwgt(const char* outfile,
 							    false, 20, 
 							    true);
   RemoveSysts(fitsysts_norwt, {"NuWroRWT", "NuWroReweightFakeData"});
-  RemoveSysts(fitsysts, {"NuWroRWT", "NuWroReweightFakeData"});
   std::vector<const ISyst*> ndwgt = GetXSecSysts({"NuWroRWT"});
   std::vector<const ISyst*> fakedata = GetXSecSysts({"NuWroReweightFakeData"});
   // Sets up the systematics correctly
@@ -243,15 +267,10 @@ void fdFitWithRwgt(const char* outfile,
   SystShifts fakedatashift(fakedata.at(fakedata.size()-1), 1);
   std::cout<<"fakedatashift is using "<<fakedata.at(fakedata.size()-1)->ShortName()<<std::endl;
   systlist.insert(systlist.end(), fakedata.end()-1, fakedata.end());
-  std::cout<<"Loaded "<<systlist.size()<<" systs to make the PredictionInterps of which "<<fitsysts.size()<<" are being fitted"<<std::endl;
+  std::cout<<"Loaded "<<systlist.size()<<" systs to make the PredictionInterps of which "<<fitsysts_norwt.size()<<" are being fitted"<<std::endl;
   std::cout<<"Systs to make state files"<<std::endl;
   for (unsigned int i=0; i<systlist.size(); i++) {
     std::cout<<systlist[i]->ShortName()<<std::endl;
-  }
-  
-  std::cout<<"\nSysts to be fitted"<<std::endl;
-  for (unsigned int i=0; i<fitsysts.size(); i++) {
-    std::cout<<fitsysts[i]->ShortName()<<std::endl;
   }
 
   std::cout<<"\nSysts to be fitted no NuWro reweight"<<std::endl;
@@ -374,19 +393,6 @@ void fdFitWithRwgt(const char* outfile,
 
   TFile *fout = new TFile(outfile, "recreate");
   fout->cd();
-  // Make some +/- 1, 2, 3 sigma plots to check everything is in order 
-  std::vector<TH1*> numuFhcRecoVec = makeSigmaHists(&predNumuFhcReco, "numufhc", fitsysts.at(0/*fitsysts.size()-1*/), this_calc, pot_fd);
-  std::vector<TH1*> nueFhcRecoVec  = makeSigmaHists(&predNueFhcReco, "nuefhc", fitsysts.at(0/*fitsysts.size()-1*/), this_calc, pot_fd);
-  std::vector<TH1*> numuRhcRecoVec = makeSigmaHists(&predNumuRhcReco, "numurhc", fitsysts.at(0/*fitsysts.size()-1*/), this_calc, pot_fd);
-  std::vector<TH1*> nueRhcRecoVec  = makeSigmaHists(&predNueRhcReco, "nuerhc", fitsysts.at(0/*fitsysts.size()-1*/), this_calc, pot_fd);
-  THStack *hsNumuFhcReco = makeSigmaStack(numuFhcRecoVec, "hsNumuFhcReco", "#nu_{#mu} FHC; E / GeV; Events / GeV");
-  THStack *hsNueFhcReco  = makeSigmaStack(nueFhcRecoVec, "hsNueFhcReco", "#nu_{e} FHC; E / GeV; Events / GeV");
-  THStack *hsNumuRhcReco = makeSigmaStack(numuRhcRecoVec, "hsNumuRhcReco", "#nu_{#mu} RHC; E / GeV; Events / GeV");
-  THStack *hsNueRhcReco  = makeSigmaStack(nueRhcRecoVec, "hsNueRhcReco", "#nu_{e} RHC; E / GeV; Events / GeV");
-  hsNumuFhcReco->Write();
-  hsNueFhcReco->Write();
-  hsNumuRhcReco->Write();
-  hsNueRhcReco->Write();
 
   TGraph *dCPTrue = new TGraph();
   TGraph *dCPBias = new TGraph();
@@ -395,7 +401,6 @@ void fdFitWithRwgt(const char* outfile,
 
   TGraph *theta13 = new TGraph();
   TGraph *theta23 = new TGraph();
-  TGraph *rho     = new TGraph();
   TGraph *theta13_nowgt = new TGraph();
   TGraph *theta23_nowgt = new TGraph();
   dCPBias_nowgt->SetLineColor(kRed);
@@ -404,11 +409,56 @@ void fdFitWithRwgt(const char* outfile,
   dCPBias->SetLineColor(kBlack);
   dCPBias->SetLineWidth(2);
 
+  TTree *trFits = new TTree("fitResults", "fitResults");
+  int ii;
+  double deltaTrue, th13True, th23True, dmsq32True;
+  trFits->Branch("ii", &ii);
+  trFits->Branch("deltaTrue", &deltaTrue);
+  trFits->Branch("th13True", &th13True);
+  trFits->Branch("th23True", &th23True);
+  trFits->Branch("dmsq32True", &dmsq32True);
+  double deltaFit, deltaBias, th23Fit, th13Fit, dmsq32Fit, chi2;
+  trFits->Branch("deltaFit", &deltaFit);
+  trFits->Branch("deltaBias", &deltaBias);
+  trFits->Branch("th13Fit", &th13Fit);
+  trFits->Branch("th23Fit", &th23Fit);
+  trFits->Branch("dmsq32Fit", &dmsq32Fit);
+  trFits->Branch("chi2", &chi2);
+  double deltaFit_norwt, deltaBias_norwt, th23Fit_norwt, th13Fit_norwt, dmsq32Fit_norwt, chi2_norwt;
+  trFits->Branch("deltaFit_norwt", &deltaFit_norwt);
+  trFits->Branch("deltaBias_norwt", &deltaBias_norwt);
+  trFits->Branch("th13Fit_norwt", &th13Fit_norwt);
+  trFits->Branch("th23Fit_norwt", &th23Fit_norwt);
+  trFits->Branch("dmsq32Fit_norwt", &dmsq32Fit_norwt);
+  trFits->Branch("chi2_norwt", &chi2_norwt);
+  double deltaFit_noTh13, deltaBias_noTh13, th23Fit_noTh13, th13Fit_noTh13, dmsq32Fit_noTh13, chi2_noTh13;
+  trFits->Branch("deltaFit_noTh13", &deltaFit_noTh13);
+  trFits->Branch("deltaBias_noTh13", &deltaBias_noTh13);
+  trFits->Branch("th13Fit_noTh13", &th13Fit_noTh13);
+  trFits->Branch("th23Fit_noTh13", &th23Fit_noTh13);
+  trFits->Branch("dmsq32Fit_noTh13", &dmsq32Fit_noTh13);
+  trFits->Branch("chi2_noTh13", &chi2_noTh13);
+  double deltaFit_norwt_noTh13, deltaBias_norwt_noTh13, th23Fit_norwt_noTh13, th13Fit_norwt_noTh13, dmsq32Fit_norwt_noTh13, chi2_norwt_noTh13;
+  trFits->Branch("deltaFit_norwt_noTh13", &deltaFit_norwt_noTh13);
+  trFits->Branch("deltaBias_norwt_noTh13", &deltaBias_norwt_noTh13);
+  trFits->Branch("th13Fit_norwt_noTh13", &th13Fit_norwt_noTh13);
+  trFits->Branch("th23Fit_norwt_noTh13", &th23Fit_norwt_noTh13);
+  trFits->Branch("dmsq32Fit_norwt_noTh13", &dmsq32Fit_norwt_noTh13);
+  trFits->Branch("chi2_norwt_noTh13", &chi2_norwt_noTh13);
+
   for (int i=firstPoint; i<=lastPoint; i++) {
     double dCP = ((double)i/(double)nPoints) * 2. * TMath::Pi();
     std::cout<<"\nRunning delta CP point "<<i<<" of "<<nPoints<<". dCP="<<dCP<<std::endl;
     this_calc->SetdCP(dCP);
     dCPTrue->SetPoint(i, i, dCP);
+
+    // True variables
+    ii = i;
+    deltaTrue  = dCP;
+    th13True   = this_calc->GetTh13();
+    th23True   = TMath::Sin(this_calc->GetTh23())*TMath::Sin(this_calc->GetTh23());
+    dmsq32True = this_calc->GetDmsq32()*1000.;
+
     // Make the experiments
     std::cout<<"Building SingleSampleExperiments"<<std::endl;
     SingleSampleExperiment expNumuFhcReco(&predNumuFhcReco_wgt, predNumuFhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
@@ -418,178 +468,48 @@ void fdFitWithRwgt(const char* outfile,
  
     std::cout<<"Built SingleSampleExperiments"<<std::endl;
 
-    MultiExperiment multiExp({&expNumuFhcReco, &expNueFhcReco, &expNumuRhcReco, &expNueRhcReco});
-    // multiExp.Add(&penalty);
+    MultiExperiment multiExp({&expNumuFhcReco, &expNueFhcReco, &expNumuRhcReco, &expNueRhcReco, th13});
+    SystShifts testSysts = kNoShift;
+    osc::IOscCalculatorAdjustable* testOsc = NuFitOscCalc(1);
+    std::vector<double> out = fitPoint(&multiExp, fitVars, fitsysts_norwt,
+				       testOsc, testSysts, 
+				       oscSeeds, this_calc);
+    chi2      = out.at(out.size()-1);
+    deltaFit  = out.at(3);
+    deltaBias = out.at(out.size()-2);
+    th13Fit   = out.at(1);
+    dmsq32Fit = out.at(0);
+    th23Fit   = out.at(2);
 
-    SystShifts fitsyst = kNoShift;
-    SystShifts junk = kNoShift;
+    // Now set up the fit itself                             
+    SingleSampleExperiment expNumuFhcReco_norwt(&predNumuFhcReco, predNumuFhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
+    SingleSampleExperiment expNueFhcReco_norwt(&predNueFhcReco, predNueFhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
+    SingleSampleExperiment expNumuRhcReco_norwt(&predNumuRhcReco, predNumuRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
+    SingleSampleExperiment expNueRhcReco_norwt(&predNueRhcReco, predNueRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));     
 
-    auto start_fit = std::chrono::system_clock::now();
-    // Now set up the fit itself                         
-    osc::IOscCalculatorAdjustable* testOsc = /*DefaultOscCalc();*/NuFitOscCalc(1);
-    // testOsc->SetTh13(kNuFitTh13CVNH);  
-    // testOsc->SetTh23(kNuFitTh23CVNH);  
-    // testOsc->SetDmsq21(kNuFitDmsq21CV);
-    // testOsc->SetDmsq32(kNuFitDmsq32CVNH);
-    // testOsc->SetdCP(dCP);
-    // testOsc->SetL(kBaseline);
-    // testOsc->SetRho(kEarthDensity);
-
+    osc::IOscCalculatorAdjustable* testOsc_norwt = NuFitOscCalc(1);
+    SystShifts testSysts_norwt = kNoShift;
     // Prefits
-    TH1* hpreNumuFhc = makePrefit(Form("hpreNumuFhc_%d", i), &predNumuFhcReco_wgt, junk, testOsc, pot_fd);
-    TH1* hpreNueFhc  = makePrefit(Form("hpreNueFhc_%d", i), &predNueFhcReco_wgt, junk, testOsc, pot_fd);
-    TH1* hpreNumuRhc = makePrefit(Form("hpreNumuRhc_%d", i), &predNumuRhcReco_wgt, junk, testOsc, pot_fd);
-    TH1* hpreNueRhc  = makePrefit(Form("hpreNueRhc_%d", i), &predNueRhcReco_wgt, junk, testOsc, pot_fd);
-    hpreNumuFhc->Write();
-    hpreNueFhc->Write();
-    hpreNumuRhc->Write();
-    hpreNueRhc->Write();
-    // Data
-    TH1* hdataNumuFhc = makeData(Form("hdataNumuFhc_%d", i), &predNumuFhcReco, fakedatashift, this_calc, pot_fd);
-    TH1* hdataNueFhc  = makeData(Form("hdataNueFhc_%d", i), &predNueFhcReco, fakedatashift, this_calc, pot_fd);
-    TH1* hdataNumuRhc = makeData(Form("hdataNumuRhc_%d", i), &predNumuRhcReco, fakedatashift, this_calc, pot_fd);
-    TH1* hdataNueRhc  = makeData(Form("hdataNueRhc_%d", i), &predNueRhcReco, fakedatashift, this_calc, pot_fd);
-    hdataNumuFhc->Write();
-    hdataNueFhc->Write();
-    hdataNumuRhc->Write();
-    hdataNueRhc->Write();
-
-    std::cerr << "[INFO]: Beginning fit. " << BuildLogInfoString();
-    Fitter fd_only_fit(&multiExp, fitVars, fitsysts_norwt);
-    double fd_only_chisq = fd_only_fit.Fit(testOsc, junk, oscSeeds, {}, Fitter::kVerbose);
-    auto end_fit = std::chrono::system_clock::now();
-    std::time_t end_fit_time = std::chrono::system_clock::to_time_t(end_fit);
-    std::cerr << "[FIT]: Finished fit in "
-	      << std::chrono::duration_cast<std::chrono::seconds>(end_fit -
-								  start_fit).count()
-	      << " s after " << fd_only_fit.GetNFCN() << " iterations "
-	      << BuildLogInfoString();
-
-    // Postfits
-    TH1* hpostNumuFhc = makePostfit(Form("hpostNumuFhc_%d", i), &predNumuFhcReco_wgt, junk, testOsc, pot_fd);
-    TH1* hpostNueFhc  = makePostfit(Form("hpostNueFhc_%d", i), &predNueFhcReco_wgt, junk, testOsc, pot_fd);
-    TH1* hpostNumuRhc = makePostfit(Form("hpostNumuRhc_%d", i), &predNumuRhcReco_wgt, junk, testOsc, pot_fd);
-    TH1* hpostNueRhc  = makePostfit(Form("hpostNueRhc_%d", i), &predNueRhcReco_wgt, junk, testOsc, pot_fd);
-    hpostNumuFhc->Write();
-    hpostNueFhc->Write();
-    hpostNumuRhc->Write();
-    hpostNueRhc->Write();
-
-    THStack *hsNumuFhc = makeFitStack(Form("hsNumuFhc_%d", i), "#nu_{#mu} (FHC); E_{#nu, reco} / GeV; Events / GeV", hpreNumuFhc, hdataNumuFhc, hpostNumuFhc);
-    THStack *hsNueFhc  = makeFitStack(Form("hsNueFhc_%d", i), "#nu_{e} (FHC); E_{#nu, reco} / GeV; Events / GeV", hpreNueFhc, hdataNueFhc, hpostNueFhc);
-    THStack *hsNumuRhc = makeFitStack(Form("hsNumuRhc_%d", i), "#nu_{#mu} (RHC); E_{#nu, reco} / GeV; Events / GeV", hpreNumuRhc, hdataNumuRhc, hpostNumuRhc);
-    THStack *hsNueRhc  = makeFitStack(Form("hsNueRhc_%d", i), "#nu_{e} (RHC); E_{#nu, reco} / GeV; Events / GeV", hpreNueRhc, hdataNueRhc, hpostNueRhc);
-    hsNumuFhc->Write();
-    hsNueFhc->Write();
-    hsNumuRhc->Write();
-    hsNueRhc->Write();
-
-    THStack* hsNumuFhcComp = dataMCWgtComp(Form("hsNumuFhcComp_%d", i), "#nu_{#mu} (FHC); E_{#nu, reco} / GeV; Events / GeV", &predNumuFhcReco_wgt, &predNumuFhcReco, &predNumuFhcReco, fakedatashift, this_calc, pot_fd);
-    THStack* hsNueFhcComp = dataMCWgtComp(Form("hsNueFhcComp_%d", i), "#nu_{e} (FHC); E_{#nu, reco} / GeV; Events / GeV", &predNueFhcReco_wgt, &predNueFhcReco, &predNueFhcReco, fakedatashift, this_calc, pot_fd);
-    THStack* hsNumuRhcComp = dataMCWgtComp(Form("hsNumuRhcComp_%d", i), "#nu_{#mu} (RHC); E_{#nu, reco} / GeV; Events / GeV", &predNumuRhcReco_wgt, &predNumuRhcReco, &predNumuRhcReco, fakedatashift, this_calc, pot_fd);
-    THStack* hsNueRhcComp = dataMCWgtComp(Form("hsNueRhcComp_%d", i), "#nu_{e} (RHC); E_{#nu, reco} / GeV; Events / GeV", &predNueRhcReco_wgt, &predNueRhcReco, &predNueRhcReco, fakedatashift, this_calc, pot_fd);
-    hsNumuFhcComp->Write();
-    hsNueFhcComp->Write();
-    hsNumuRhcComp->Write();
-    hsNueRhcComp->Write();
-
-    TTree *fd_only_tree = new TTree(Form("fd_only_%d",i), Form("fd_only_%d",i));
-    std::vector<std::string> fParamNames;
-    std::vector<double> fPreFitValues;
-    std::vector<double> fPreFitErrors;
-    std::vector<double> fPostFitValues;
-    std::vector<double> fPostFitErrors;
-    std::vector<double> fCentralValues;
-    std::vector<double> fTrueValues;
-    double fNFCN, fEDM, fChiSq;
-    bool fIsValid;
-    fd_only_tree->Branch("ParamNames", &fParamNames);
-    fd_only_tree->Branch("PreFitValues", &fPreFitValues);
-    fd_only_tree->Branch("PreFitErrors", &fPreFitErrors);
-    fd_only_tree->Branch("PostFitValues", &fPostFitValues);
-    fd_only_tree->Branch("PostFitErrors", &fPostFitErrors);
-    fd_only_tree->Branch("CentralValues", &fCentralValues);
-    fd_only_tree->Branch("TrueValues", &fTrueValues);
-    fd_only_tree->Branch("NFCN", &fNFCN);
-    fd_only_tree->Branch("EDM", &fEDM);
-    fd_only_tree->Branch("ChiSq", &fChiSq);
-    fd_only_tree->Branch("fIsValid", &fIsValid);
-
-    fParamNames = fd_only_fit.GetParamNames();
-    fPreFitValues = fd_only_fit.GetPreFitValues();
-    fPreFitErrors = fd_only_fit.GetPreFitErrors();
-    fPostFitValues = fd_only_fit.GetPostFitValues();
-    fPostFitErrors = fd_only_fit.GetPostFitErrors();
-    fCentralValues = fd_only_fit.GetCentralValues();
-    fNFCN = fd_only_fit.GetNFCN();
-    fEDM = fd_only_fit.GetEDM();
-    fIsValid = fd_only_fit.GetIsValid();
-    fChiSq = fd_only_chisq;
-
-    double bias = (dCP - fPostFitValues.at(3)*TMath::Pi())*(180./TMath::Pi());
-    if (bias<-180) bias+=360;
-    else if (bias>360) bias-=360;
-    dCPBias->SetPoint(i, dCP*(180./TMath::Pi()), bias);
-    dCPBias_noCorr->SetPoint(i, dCP*(180./TMath::Pi()), (dCP - fPostFitValues.at(3)*TMath::Pi())*(180./TMath::Pi()));
-
-    fTrueValues.resize(fParamNames.size(), 0.);
-    fTrueValues.at(0) = this_calc->GetDmsq32()*1000.;
-    fTrueValues.at(1) = this_calc->GetTh13();
-    fTrueValues.at(2) = TMath::Sin(this_calc->GetTh23())*TMath::Sin(this_calc->GetTh23());
-    fTrueValues.at(3) = this_calc->GetdCP();
-    // fTrueValues.at(4) = this_calc->GetRho();
-
-    fd_only_tree->Fill();
-    fd_only_tree->Write();
-
-    // rho->SetPoint(i, this_calc->GetRho()-fPostFitValues.at(4), dCP*(180./TMath::Pi()));
-    theta13->SetPoint(i, this_calc->GetTh13()-fPostFitValues.at(1), dCP*(180./TMath::Pi()));
-    theta23->SetPoint(i, TMath::Sin(this_calc->GetTh23())*TMath::Sin(this_calc->GetTh23())-fPostFitValues.at(2), dCP*(180./TMath::Pi()));
-
-    TMatrixDSym *covar = (TMatrixDSym *)fd_only_fit.GetCovariance();
-    TH2D hist_covar = TH2D(*covar);
-    hist_covar.SetName("covar");                                                                      
-    TH2D hist_corr = *make_corr_from_covar(&hist_covar);
-    hist_covar.Write();
-    hist_corr.Write();
-    covar->Write("covar_mat");
-
-    // Do the same thing without the NuWroRWT CV weight  
-    std::cout<<"\nNow making without CV weight"<<std::endl;
-    SystShifts fitsyst_norwt = kNoShift;
-    SystShifts junk_norwt    = kNoShift;
-
-    // Make Experiments
-    SingleSampleExperiment expNumuFhcReco_nowgt(&predNumuFhcReco, predNumuFhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
-    SingleSampleExperiment expNueFhcReco_nowgt(&predNueFhcReco, predNueFhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
-    SingleSampleExperiment expNumuRhcReco_nowgt(&predNumuRhcReco, predNumuRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
-    SingleSampleExperiment expNueRhcReco_nowgt(&predNueRhcReco, predNueRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
-
-    std::cout<<"Built SingleSampleExperiments"<<std::endl;
-
-    MultiExperiment multiExp_nowgt({&expNumuFhcReco_nowgt, &expNueFhcReco_nowgt, &expNumuRhcReco_nowgt, &expNueRhcReco_nowgt});
-    // multiExp_nowgt.Add(&penalty);
-
-    auto start_fit_norwt = std::chrono::system_clock::now();
-    // Now set up the fit itself                                  
-    osc::IOscCalculatorAdjustable* testOsc_norwt = /*DefaultOscCalc();*/NuFitOscCalc(1);
-    // testOsc_norwt->SetTh13(kNuFitTh13CVNH);  
-    // testOsc_norwt->SetTh23(kNuFitTh23CVNH);  
-    // testOsc_norwt->SetDmsq21(kNuFitDmsq21CV);
-    // testOsc_norwt->SetDmsq32(kNuFitDmsq32CVNH);
-    // testOsc_norwt->SetdCP(dCP);
-    // testOsc_norwt->SetL(kBaseline);
-    // testOsc_norwt->SetRho(kEarthDensity);
-
-    // Prefits
-    TH1* hpreNumuFhc_nowgt = makePrefit(Form("hpreNumuFhc_nowgt_%d", i), &predNumuFhcReco, junk_norwt, testOsc_norwt, pot_fd);
-    TH1* hpreNueFhc_nowgt  = makePrefit(Form("hpreNueFhc_nowgt_%d", i), &predNueFhcReco, junk_norwt, testOsc_norwt, pot_fd);
-    TH1* hpreNumuRhc_nowgt = makePrefit(Form("hpreNumuRhc_nowgt_%d", i), &predNumuRhcReco, junk_norwt, testOsc_norwt, pot_fd);
-    TH1* hpreNueRhc_nowgt  = makePrefit(Form("hpreNueRhc_nowgt_%d", i), &predNueRhcReco, junk_norwt, testOsc_norwt, pot_fd);
+    TH1* hpreNumuFhc_nowgt = makePrefit(Form("hpreNumuFhc_nowgt_%d", i), &predNumuFhcReco, testSysts_norwt, testOsc_norwt, pot_fd);
+    TH1* hpreNueFhc_nowgt  = makePrefit(Form("hpreNueFhc_nowgt_%d", i), &predNueFhcReco, testSysts_norwt, testOsc_norwt, pot_fd);
+    TH1* hpreNumuRhc_nowgt = makePrefit(Form("hpreNumuRhc_nowgt_%d", i), &predNumuRhcReco, testSysts_norwt, testOsc_norwt, pot_fd);
+    TH1* hpreNueRhc_nowgt  = makePrefit(Form("hpreNueRhc_nowgt_%d", i), &predNueRhcReco, testSysts_norwt, testOsc_norwt, pot_fd);
     hpreNumuFhc_nowgt->Write();
     hpreNueFhc_nowgt->Write();
     hpreNumuRhc_nowgt->Write();
     hpreNueRhc_nowgt->Write();
+
+    MultiExperiment multiExp_norwt({&expNumuFhcReco_norwt, &expNueFhcReco_norwt, &expNumuRhcReco_norwt, &expNueRhcReco_norwt, th13});
+    std::vector<double> out_norwt = fitPoint(&multiExp_norwt, fitVars, fitsysts_norwt,
+					     testOsc_norwt, testSysts_norwt, 
+					     oscSeeds, this_calc);
+    chi2_norwt      = out_norwt.at(out_norwt.size()-1);
+    deltaFit_norwt  = out_norwt.at(3);
+    deltaBias_norwt = out_norwt.at(out_norwt.size()-2);
+    th13Fit_norwt   = out_norwt.at(1);
+    dmsq32Fit_norwt = out_norwt.at(0);
+    th23Fit_norwt   = out_norwt.at(2);
+
     // Data
     TH1* hdataNumuFhc_nowgt = makeData(Form("hdataNumuFhc_nowgt_%d", i), &predNumuFhcReco, fakedatashift, this_calc, pot_fd);
     TH1* hdataNueFhc_nowgt  = makeData(Form("hdataNueFhc_nowgt_%d", i), &predNueFhcReco, fakedatashift, this_calc, pot_fd);
@@ -600,26 +520,15 @@ void fdFitWithRwgt(const char* outfile,
     hdataNumuRhc_nowgt->Write();
     hdataNueRhc_nowgt->Write();
 
-    std::cerr << "[INFO]: Beginning fit. " << BuildLogInfoString();
-    Fitter fd_only_fit_norwt(&multiExp_nowgt, fitVars, fitsysts_norwt);
-    double fd_only_chisq_norwt = fd_only_fit_norwt.Fit(testOsc_norwt, junk_norwt, oscSeeds, {}, Fitter::kVerbose);
-    auto end_fit_norwt = std::chrono::system_clock::now();
-    std::time_t end_fit_time_norwt = std::chrono::system_clock::to_time_t(end_fit);
-    std::cerr << "[FIT]: Finished fit in "
-	      << std::chrono::duration_cast<std::chrono::seconds>(end_fit_norwt -
-								  start_fit_norwt).count()
-	      << " s after " << fd_only_fit_norwt.GetNFCN() << " iterations "
-	      << BuildLogInfoString();
-
     // Postfits
-    TH1* hpostNumuFhc_nowgt = makePostfit(Form("hpostNumuFhc_nowgt_%d", i), &predNumuFhcReco, junk_norwt, testOsc_norwt, pot_fd);
-    TH1* hpostNueFhc_nowgt  = makePostfit(Form("hpostNueFhc_nowgt_%d", i), &predNueFhcReco, junk_norwt, testOsc_norwt, pot_fd);
-    TH1* hpostNumuRhc_nowgt = makePostfit(Form("hpostNumuRhc_nowgt_%d", i), &predNumuRhcReco, junk_norwt, testOsc_norwt, pot_fd);
-    TH1* hpostNueRhc_nowgt  = makePostfit(Form("hpostNueRhc_nowgt_%d", i), &predNueRhcReco, junk_norwt, testOsc_norwt, pot_fd);
-    hpostNumuFhc->Write();
-    hpostNueFhc->Write();
-    hpostNumuRhc->Write();
-    hpostNueRhc->Write();
+    TH1* hpostNumuFhc_nowgt = makePostfit(Form("hpostNumuFhc_nowgt_%d", i), &predNumuFhcReco, testSysts_norwt, testOsc_norwt, pot_fd);
+    TH1* hpostNueFhc_nowgt  = makePostfit(Form("hpostNueFhc_nowgt_%d", i), &predNueFhcReco, testSysts_norwt, testOsc_norwt, pot_fd);
+    TH1* hpostNumuRhc_nowgt = makePostfit(Form("hpostNumuRhc_nowgt_%d", i), &predNumuRhcReco, testSysts_norwt, testOsc_norwt, pot_fd);
+    TH1* hpostNueRhc_nowgt  = makePostfit(Form("hpostNueRhc_nowgt_%d", i), &predNueRhcReco, testSysts_norwt, testOsc_norwt, pot_fd);
+    hpostNumuFhc_nowgt->Write();
+    hpostNueFhc_nowgt->Write();
+    hpostNumuRhc_nowgt->Write();
+    hpostNueRhc_nowgt->Write();
 
     THStack *hsNumuFhc_nowgt = makeFitStack(Form("hsNumuFhc_nowgt_%d", i), "#nu_{#mu} (FHC); E_{#nu, reco} / GeV; Events / GeV", hpreNumuFhc_nowgt, hdataNumuFhc_nowgt, hpostNumuFhc_nowgt);
     THStack *hsNueFhc_nowgt  = makeFitStack(Form("hsNueFhc_nowgt_%d", i), "#nu_{e} (FHC); E_{#nu, reco} / GeV; Events / GeV", hpreNueFhc_nowgt, hdataNueFhc_nowgt, hpostNueFhc_nowgt);
@@ -630,47 +539,38 @@ void fdFitWithRwgt(const char* outfile,
     hsNumuRhc_nowgt->Write();
     hsNueRhc_nowgt->Write();
 
-    TTree *fd_only_tree_norwt = new TTree(Form("fd_only_norwt_%d",i), Form("fd_only_norwt_%d",i));
-    fd_only_tree_norwt->Branch("ParamNames", &fParamNames);
-    fd_only_tree_norwt->Branch("PreFitValues", &fPreFitValues);
-    fd_only_tree_norwt->Branch("PreFitErrors", &fPreFitErrors);
-    fd_only_tree_norwt->Branch("PostFitValues", &fPostFitValues);
-    fd_only_tree_norwt->Branch("PostFitErrors", &fPostFitErrors);
-    fd_only_tree_norwt->Branch("CentralValues", &fCentralValues);
-    fd_only_tree_norwt->Branch("TrueValues", &fTrueValues);
-    fd_only_tree_norwt->Branch("NFCN", &fNFCN);
-    fd_only_tree_norwt->Branch("EDM", &fEDM);
-    fd_only_tree_norwt->Branch("ChiSq", &fChiSq);
-    fd_only_tree_norwt->Branch("fIsValid", &fIsValid);
-    fParamNames = fd_only_fit_norwt.GetParamNames();
-    fPreFitValues = fd_only_fit_norwt.GetPreFitValues();
-    fPreFitErrors = fd_only_fit_norwt.GetPreFitErrors();
-    fPostFitValues = fd_only_fit_norwt.GetPostFitValues();
-    fPostFitErrors = fd_only_fit_norwt.GetPostFitErrors();
-    fCentralValues = fd_only_fit_norwt.GetCentralValues();
-    fNFCN = fd_only_fit_norwt.GetNFCN();
-    fEDM = fd_only_fit_norwt.GetEDM();
-    fIsValid = fd_only_fit_norwt.GetIsValid();
-    fChiSq = fd_only_chisq_norwt;
-double 
-    bias = (dCP - fPostFitValues.at(3)*TMath::Pi())*(180./TMath::Pi());
-    if (bias<-180) bias+=360;
-    else if (bias>360) bias-=360;
-    dCPBias_nowgt->SetPoint(i, dCP*(180./TMath::Pi()), bias);
+    // theta13_nowgt->SetPoint(i, dCP*(180./TMath::Pi()), this_calc->GetTh13()-fPostFitValues.at(1));
+    // theta23_nowgt->SetPoint(i, dCP*(180./TMath::Pi()), TMath::Sin(this_calc->GetTh23())*TMath::Sin(this_calc->GetTh23())-fPostFitValues.at(2));
 
-    fTrueValues.resize(fParamNames.size(), 0.);
-    fTrueValues.at(0) = this_calc->GetDmsq32()*1000.;
-    fTrueValues.at(1) = this_calc->GetTh13();
-    fTrueValues.at(2) = TMath::Sin(this_calc->GetTh23())*TMath::Sin(this_calc->GetTh23());
-    fTrueValues.at(3) = this_calc->GetdCP();
-    // fTrueValues.at(4) = this_calc->GetRho();
+    // Fit with no NuFit penalty
+    MultiExperiment multiExp_noTh13({&expNumuFhcReco, &expNueFhcReco, &expNumuRhcReco, &expNueRhcReco});
+    SystShifts testSysts_noTh13 = kNoShift;
+    osc::IOscCalculatorAdjustable* testOsc_noTh13 = NuFitOscCalc(1);
+    std::vector<double> out_noTh13 = fitPoint(&multiExp_noTh13, fitVars, fitsysts_norwt,
+					      testOsc_noTh13, testSysts_noTh13, 
+					      oscSeeds, this_calc);
+    chi2_noTh13      = out_noTh13.at(out_noTh13.size()-1);
+    deltaFit_noTh13  = out_noTh13.at(3);
+    deltaBias_noTh13 = out_noTh13.at(out_noTh13.size()-2);
+    th13Fit_noTh13   = out_noTh13.at(1);
+    dmsq32Fit_noTh13 = out_noTh13.at(0);
+    th23Fit_noTh13   = out_noTh13.at(2);
 
-    fd_only_tree_norwt->Fill();
-    fd_only_tree_norwt->Write();
+    // Fit with no NuFit penalty and no reweight
+    MultiExperiment multiExp_norwt_noTh13({&expNumuFhcReco_norwt, &expNueFhcReco_norwt, &expNumuRhcReco_norwt, &expNueRhcReco_norwt});
+    SystShifts testSysts_norwt_noTh13 = kNoShift;
+    osc::IOscCalculatorAdjustable* testOsc_norwt_noTh13 = NuFitOscCalc(1);
+    std::vector<double> out_norwt_noTh13 = fitPoint(&multiExp_norwt_noTh13, fitVars, fitsysts_norwt,
+						    testOsc_norwt_noTh13, testSysts_norwt_noTh13, 
+						    oscSeeds, this_calc);
+    chi2_norwt_noTh13      = out_norwt_noTh13.at(out_norwt_noTh13.size()-1);
+    deltaFit_norwt_noTh13  = out_norwt_noTh13.at(3);
+    deltaBias_norwt_noTh13 = out_norwt_noTh13.at(out_norwt_noTh13.size()-2);
+    th13Fit_norwt_noTh13   = out_norwt_noTh13.at(1);
+    dmsq32Fit_norwt_noTh13 = out_norwt_noTh13.at(0);
+    th23Fit_norwt_noTh13   = out_norwt_noTh13.at(2);
 
-    // rho_nowgt->SetPoint(i, dCP*(180./TMath::Pi()), this_calc->GetRho()-fPostFitValues.at(4));
-    theta13_nowgt->SetPoint(i, dCP*(180./TMath::Pi()), this_calc->GetTh13()-fPostFitValues.at(1));
-    theta23_nowgt->SetPoint(i, dCP*(180./TMath::Pi()), TMath::Sin(this_calc->GetTh23())*TMath::Sin(this_calc->GetTh23())-fPostFitValues.at(2));
+    trFits->Fill();
   }
   dCPTrue->SetTitle("True #delta_{CP}; Point; #delta_{CP}");
   dCPBias->SetTitle("#delta_{CP} bias with NuWroRWT; True #delta_{CP}; #delta_{CP} bias");
@@ -684,6 +584,8 @@ double
   theta13_nowgt->Write("theta13_nowgt");
   theta23->Write("theta23");
   theta23_nowgt->Write("theta23_nowgt");
+
+  trFits->Write();
 
   fout->Close();
 } // fdFitWithRwgt
