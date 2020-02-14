@@ -88,7 +88,7 @@ TH1D* ratioSuppressLowStats(TH1 *hgenie, TH1* hnuwro, const char* name, const ch
 			    const double inputPOT, const double truePOT)
 {
   assert(hgenie->GetNbinsX() == hnuwro->GetNbinsX());
-  TH1D *hout = new TH1D(name, title, hgenie->GetNbinsX(), 0., 3.);
+  TH1D *hout = new TH1D(name, title, hgenie->GetNbinsX(), 0., hgenie->GetXaxis()->GetBinLowEdge(hgenie->GetNbinsX()+1));
   for (int i=1; i<hgenie->GetNbinsX()+1; i++) {
     if (hgenie->GetBinContent(i) * (truePOT/inputPOT) < 100.) {
       // Set bin content to 0
@@ -169,7 +169,6 @@ TH1D* ratioWithSpread(const char* name, const char* title,
     hr->SetBinContent(i, num/denom);
     hr->SetBinError(i, spread);
   }
-
   return hr;
 }
 
@@ -203,6 +202,7 @@ const Var kP         = SIMPLEVAR(dune.nP);
 const Var kOther     = SIMPLEVAR(dune.niother) + SIMPLEVAR(dune.nNucleus);
 const Var kHad       = SIMPLEVAR(dune.nipip)+SIMPLEVAR(dune.nipim)+SIMPLEVAR(dune.nipi0)+SIMPLEVAR(dune.nikp)+SIMPLEVAR(dune.nikm)+SIMPLEVAR(dune.nik0)+SIMPLEVAR(dune.nP)+SIMPLEVAR(dune.nN)/*+SIMPLEVAR(dune.niother)+SIMPLEVAR(dune.nNucleus)*/;
 const Var kChargedHad = SIMPLEVAR(dune.nipip)+SIMPLEVAR(dune.nipim)+SIMPLEVAR(dune.nikp)+SIMPLEVAR(dune.nikm)+SIMPLEVAR(dune.nP);
+const Var kRecoNumu  =  SIMPLEVAR(dune.reco_numu);
 
 // Reco Q2
 const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
@@ -258,8 +258,8 @@ const HistAxis axCategory("True category", binsCategory, kTrueCategory,
 			  "Reco category", binsCategory, kRecoCategory);
 
 const int nBinsKinematics = 20;
-const Binning binsW  = Binning::Simple(nBinsKinematics, 0., 3.);
-const Binning binsQ2 = Binning::Simple(nBinsKinematics, 0., 3.);
+const Binning binsW  = Binning::Simple(20, 0., 3.);
+const Binning binsQ2 = Binning::Simple(20, 0., 5.);
 const HistAxis axRecoW ("W_{reco} / GeV", binsW, kRecoW);
 const HistAxis axRecoQ2("Q^{2}_{reco} / (GeV)^{2}", binsQ2, kRecoQ2);
 
@@ -374,8 +374,8 @@ void spreadTest(const char *outfile,
   // True categories
   NoOscPredictionGenerator genFhcQ2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV);
   NoOscPredictionGenerator genFhcQ2Cat1(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat1);
-  NoOscPredictionGenerator genFhcQ2Cat2(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat2);
-  NoOscPredictionGenerator genFhcQ2Cat3(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genFhcQ2Cat2(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genFhcQ2Cat3(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassCat3);
   NoOscPredictionGenerator genFhcQ2Cat4(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat4);
   NoOscPredictionGenerator genFhcQ2Cat5(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat5);
   NoOscPredictionGenerator genFhcQ2Cat6(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat6);
@@ -388,8 +388,8 @@ void spreadTest(const char *outfile,
   PredictionInterp predFhcQ2Cat6(systlist, 0, genFhcQ2Cat6, loadersGArFHC);
   NoOscPredictionGenerator genFhcW(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV);
   NoOscPredictionGenerator genFhcWCat1(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat1);
-  NoOscPredictionGenerator genFhcWCat2(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat2);
-  NoOscPredictionGenerator genFhcWCat3(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genFhcWCat2(axRecoW, kRecoNumu==1 && kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genFhcWCat3(axRecoW, kRecoNumu==1 && kIsTrueGasFV && kPassCat3);
   NoOscPredictionGenerator genFhcWCat4(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat4);
   NoOscPredictionGenerator genFhcWCat5(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat5);
   NoOscPredictionGenerator genFhcWCat6(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kPassCat6);
@@ -402,8 +402,8 @@ void spreadTest(const char *outfile,
   PredictionInterp predFhcWCat6(systlist, 0, genFhcWCat6, loadersGArFHC);
   // Reco categories
   NoOscPredictionGenerator genFhcQ2RecoCat1(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
-  NoOscPredictionGenerator genFhcQ2RecoCat2(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat2);
-  NoOscPredictionGenerator genFhcQ2RecoCat3(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat3);
+  NoOscPredictionGenerator genFhcQ2RecoCat2(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat2);
+  NoOscPredictionGenerator genFhcQ2RecoCat3(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat3);
   NoOscPredictionGenerator genFhcQ2RecoCat4(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat4);
   NoOscPredictionGenerator genFhcQ2RecoCat5(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat5);
   NoOscPredictionGenerator genFhcQ2RecoCat6(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat6);
@@ -414,8 +414,8 @@ void spreadTest(const char *outfile,
   PredictionInterp predFhcQ2RecoCat5(systlist, 0, genFhcQ2RecoCat5, loadersGArFHC);
   PredictionInterp predFhcQ2RecoCat6(systlist, 0, genFhcQ2RecoCat6, loadersGArFHC);
   NoOscPredictionGenerator genFhcWRecoCat1(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
-  NoOscPredictionGenerator genFhcWRecoCat2(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat2);
-  NoOscPredictionGenerator genFhcWRecoCat3(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat3);
+  NoOscPredictionGenerator genFhcWRecoCat2(axRecoW, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat2);
+  NoOscPredictionGenerator genFhcWRecoCat3(axRecoW, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat3);
   NoOscPredictionGenerator genFhcWRecoCat4(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat4);
   NoOscPredictionGenerator genFhcWRecoCat5(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat5);
   NoOscPredictionGenerator genFhcWRecoCat6(axRecoW,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat6);
@@ -429,8 +429,8 @@ void spreadTest(const char *outfile,
   // True categories
   NoOscPredictionGenerator genRhcQ2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV);
   NoOscPredictionGenerator genRhcQ2Cat1(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat1);
-  NoOscPredictionGenerator genRhcQ2Cat2(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat2);
-  NoOscPredictionGenerator genRhcQ2Cat3(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genRhcQ2Cat2(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genRhcQ2Cat3(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassCat3);
   NoOscPredictionGenerator genRhcQ2Cat4(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat4);
   NoOscPredictionGenerator genRhcQ2Cat5(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat5);
   NoOscPredictionGenerator genRhcQ2Cat6(axRecoQ2, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat6);
@@ -443,8 +443,8 @@ void spreadTest(const char *outfile,
   PredictionInterp predRhcQ2Cat6(systlist, 0, genRhcQ2Cat6, loadersGArRHC);
   NoOscPredictionGenerator genRhcW(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV);
   NoOscPredictionGenerator genRhcWCat1(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat1);
-  NoOscPredictionGenerator genRhcWCat2(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat2);
-  NoOscPredictionGenerator genRhcWCat3(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genRhcWCat2(axRecoW, kRecoNumu==1 && kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genRhcWCat3(axRecoW, kRecoNumu==1 && kIsTrueGasFV && kPassCat3);
   NoOscPredictionGenerator genRhcWCat4(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat4);
   NoOscPredictionGenerator genRhcWCat5(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat5);
   NoOscPredictionGenerator genRhcWCat6(axRecoW, kPassND_RHC_NUMU && kIsTrueGasFV && kPassCat6);
@@ -457,8 +457,8 @@ void spreadTest(const char *outfile,
   PredictionInterp predRhcWCat6(systlist, 0, genRhcWCat6, loadersGArRHC);
   // Reco categories
   NoOscPredictionGenerator genRhcQ2RecoCat1(axRecoQ2,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
-  NoOscPredictionGenerator genRhcQ2RecoCat2(axRecoQ2,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat2);
-  NoOscPredictionGenerator genRhcQ2RecoCat3(axRecoQ2,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat3);
+  NoOscPredictionGenerator genRhcQ2RecoCat2(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat2);
+  NoOscPredictionGenerator genRhcQ2RecoCat3(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat3);
   NoOscPredictionGenerator genRhcQ2RecoCat4(axRecoQ2,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat4);
   NoOscPredictionGenerator genRhcQ2RecoCat5(axRecoQ2,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat5);
   NoOscPredictionGenerator genRhcQ2RecoCat6(axRecoQ2,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat6);
@@ -469,8 +469,8 @@ void spreadTest(const char *outfile,
   PredictionInterp predRhcQ2RecoCat5(systlist, 0, genRhcQ2RecoCat5, loadersGArRHC);
   PredictionInterp predRhcQ2RecoCat6(systlist, 0, genRhcQ2RecoCat6, loadersGArRHC);
   NoOscPredictionGenerator genRhcWRecoCat1(axRecoW,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
-  NoOscPredictionGenerator genRhcWRecoCat2(axRecoW,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat2);
-  NoOscPredictionGenerator genRhcWRecoCat3(axRecoW,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat3);
+  NoOscPredictionGenerator genRhcWRecoCat2(axRecoW, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat2);
+  NoOscPredictionGenerator genRhcWRecoCat3(axRecoW, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat3);
   NoOscPredictionGenerator genRhcWRecoCat4(axRecoW,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat4);
   NoOscPredictionGenerator genRhcWRecoCat5(axRecoW,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat5);
   NoOscPredictionGenerator genRhcWRecoCat6(axRecoW,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat6);
@@ -520,7 +520,7 @@ void spreadTest(const char *outfile,
   TH1 *hFhcQ2Cat4 = predFhcQ2Cat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hFhcQ2Cat5 = predFhcQ2Cat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hFhcQ2Cat6 = predFhcQ2Cat6.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
-  TH1 *hFhcQ2_n     = predFhcQ2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2_n     = predFhcQ2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hFhcQ2Cat1_n = predFhcQ2Cat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hFhcQ2Cat2_n = predFhcQ2Cat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hFhcQ2Cat3_n = predFhcQ2Cat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
@@ -824,7 +824,7 @@ void spreadTest(const char *outfile,
   TH1 *hRhcQ2Cat4 = predRhcQ2Cat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hRhcQ2Cat5 = predRhcQ2Cat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hRhcQ2Cat6 = predRhcQ2Cat6.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
-  TH1 *hRhcQ2_n     = predRhcQ2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2_n     = predRhcQ2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hRhcQ2Cat1_n = predRhcQ2Cat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hRhcQ2Cat2_n = predRhcQ2Cat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
   TH1 *hRhcQ2Cat3_n = predRhcQ2Cat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
