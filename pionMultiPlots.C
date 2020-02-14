@@ -60,13 +60,6 @@ void setHistAttr(TH2 *h2)
 const double mmu = 0.10566; // GeV/c^2
 
 // ND vars
-// Reco X
-const Var kRecoX({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
-		 [](const caf::StandardRecord* sr) {
-		   double x = 0;
-		   x = (4 * sr->dune.Ev_reco * sr->dune.Elep_reco * TMath::Sin(sr->dune.theta_reco/2.) * TMath::Sin(sr->dune.theta_reco/2.)) / (2 * 0.939 * (sr->dune.Ev_reco - sr->dune.Elep_reco));
-		   return x;
-		 });
 // Reco Q2
 const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
 		  [](const caf::StandardRecord* sr) {
@@ -77,13 +70,13 @@ const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
 // Reco W
 const Var kRecoW({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
 		 [](const caf::StandardRecord* sr) {
+		   double pmu = sqrt(sr->dune.Elep_reco*sr->dune.Elep_reco - mmu*mmu);
 		   double q2 = 2 * sr->dune.Ev_reco * (sr->dune.Elep_reco - pmu*TMath::Cos(sr->dune.theta_reco)) - mmu*mmu;
 		   double w = TMath::Sqrt(-q2 + 2 * 0.939 * (sr->dune.Ev_reco-sr->dune.Elep_reco) + 0.939*0.939);
 		   return w;
 		 });
 const Var kRecoEnergyND  = SIMPLEVAR(dune.Ev_reco);
 // const Var kRecoYND       = (SIMPLEVAR(dune.Ev_reco)-SIMPLEVAR(dune.Elep_reco))/SIMPLEVAR(dune.Ev_reco);
-const Var kTrueYND       = (SIMPLEVAR(dune.Ev)-SIMPLEVAR(dune.LepE))/SIMPLEVAR(dune.Ev);
 const Var kTrueEnergy    = SIMPLEVAR(dune.Ev);
 const Var kTrueLepEnergy = SIMPLEVAR(dune.LepE);
 const Var kNPi = SIMPLEVAR(dune.nipip) + SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipi0);
@@ -93,13 +86,18 @@ const Var kFHC = SIMPLEVAR(dune.isFHC);
 const Var Enu_reco_numu = SIMPLEVAR(dune.Ev_reco_numu);
 const Var Enu_reco_nue  = SIMPLEVAR(dune.Ev_reco_nue);
 const Var isCC = SIMPLEVAR(dune.isCC);
+const Var kThetaReco = SIMPLEVAR(dune.theta_reco);
+const Var kLepPDG    = SIMPLEVAR(dune.LepPDG);
+// Reco multiplicities
 const Var kRecoPipl      = SIMPLEVAR(dune.gastpc_pi_pl_mult);
 const Var kRecoPimin     = SIMPLEVAR(dune.gastpc_pi_min_mult);
 const Var kRecoPi0       = SIMPLEVAR(dune.gastpc_pi_0_mult);
 const Var kRecoChargedPi = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult);
 const Var kRecoPi        = SIMPLEVAR(dune.gastpc_pi_pl_mult) + SIMPLEVAR(dune.gastpc_pi_min_mult) + SIMPLEVAR(dune.gastpc_pi_0_mult);
-const Var kThetaReco = SIMPLEVAR(dune.theta_reco);
-const Var kLepPDG    = SIMPLEVAR(dune.LepPDG);
+// True multiplicities
+const Var kPi0       = SIMPLEVAR(dune.nipi0);
+const Var kChargedPi = SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipip);
+const Var kPi        = SIMPLEVAR(dune.nipim) + SIMPLEVAR(dune.nipip) + SIMPLEVAR(dune.nipi0);
 
 // Energy bin edges
 std::vector<double> binEEdges = {0., 0.5, 1., 1.25, 1.5, 1.75,
@@ -126,9 +124,10 @@ const double years = 1.;
 const double pot_fd = years * POT120 * 40/1.13;
 const double pot_nd = years * POT120;
 
-void pionMultiPlots(const char *outFile, bool doLAr=false, 
-		    const char *lardir="/pnfs/dune/persistent/users/picker24/CAFv4/", 
-		    const char *gardir="/dune/data/users/sbjones/gasTpcCAF/v2/") 
+void pionMultiPlots(const char *outFile, 
+		    const char *gardir="/dune/data/users/sbjones/gasTpcCAF/v8/",
+		    const char *lardir="/pnfs/dune/persistent/users/picker24/CAFv4/",
+		    bool doLAr=false) 
 {
   gROOT->SetBatch(kTRUE);
   rootlogon();
@@ -137,14 +136,14 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
   
   std::vector<const ISyst*> systlist = GetXSecSysts({"NuWroReweightFakeData"});
 
-  TDRLoaders loadersFHC(TDRLoaders::kFHC);
-  TDRLoaders loadersRHC(TDRLoaders::kRHC); 
-  NoExtrapGenerator gennumureco(axisnumu, kPassFD_CVN_NUMU && kIsTrueFV); 
-  NoExtrapGenerator gennuereco(axisnue, kPassFD_CVN_NUE && kIsTrueFV); 
-  PredictionInterp predNumuFHCreco(systlist, this_calc, gennumureco, loadersFHC); 
-  PredictionInterp predNumuRHCreco(systlist, this_calc, gennumureco, loadersRHC); 
-  PredictionInterp predNueFHCreco(systlist, this_calc, gennuereco, loadersFHC); 
-  PredictionInterp predNueRHCreco(systlist, this_calc, gennuereco, loadersRHC);
+  // TDRLoaders loadersFHC(TDRLoaders::kFHC);
+  // TDRLoaders loadersRHC(TDRLoaders::kRHC);
+  // NoExtrapGenerator gennumureco(axisnumu, kPassFD_CVN_NUMU && kIsTrueFV); 
+  // NoExtrapGenerator gennuereco(axisnue, kPassFD_CVN_NUE && kIsTrueFV); 
+  // PredictionInterp predNumuFHCreco(systlist, this_calc, gennumureco, loadersFHC); 
+  // PredictionInterp predNumuRHCreco(systlist, this_calc, gennumureco, loadersRHC); 
+  // PredictionInterp predNueFHCreco(systlist, this_calc, gennuereco, loadersFHC); 
+  // PredictionInterp predNueRHCreco(systlist, this_calc, gennuereco, loadersRHC);
   
   Loaders loadersLArFHC;
   Loaders loadersLArRHC;
@@ -160,8 +159,8 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
   loadersLArFHC.AddLoader(&loaderLArFHC, caf::kNEARDET, Loaders::kMC);
   loadersLArRHC.AddLoader(&loaderLArRHC, caf::kNEARDET, Loaders::kMC);
 
-  loadersFHC.Go();
-  loadersRHC.Go();  
+  // loadersFHC.Go();
+  // loadersRHC.Go();
 
   TFile *fout = new TFile(outFile, "recreate");
 
@@ -194,57 +193,57 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
   NoOscPredictionGenerator Q2LArCCHiPi(axRecoQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueFV && isCC==1 && kNPi > 3);
 
   // FHC
-  PredictionInterp predLAr(systlist, this_calc, genLAr, loadersLArFHC);
-  PredictionInterp predLArCC0Pi(systlist, this_calc, genLArCC0Pi, loadersLArFHC);
-  PredictionInterp predLArCC1Pi(systlist, this_calc, genLArCC1Pi, loadersLArFHC);
-  PredictionInterp predLArCC2Pi(systlist, this_calc, genLArCC2Pi, loadersLArFHC);
-  PredictionInterp predLArCC3Pi(systlist, this_calc, genLArCC3Pi, loadersLArFHC);
-  PredictionInterp predLArCCHiPi(systlist, this_calc, genLArCCHiPi, loadersLArFHC);
+  PredictionInterp predLAr(systlist, 0, genLAr, loadersLArFHC);
+  PredictionInterp predLArCC0Pi(systlist, 0, genLArCC0Pi, loadersLArFHC);
+  PredictionInterp predLArCC1Pi(systlist, 0, genLArCC1Pi, loadersLArFHC);
+  PredictionInterp predLArCC2Pi(systlist, 0, genLArCC2Pi, loadersLArFHC);
+  PredictionInterp predLArCC3Pi(systlist, 0, genLArCC3Pi, loadersLArFHC);
+  PredictionInterp predLArCCHiPi(systlist, 0, genLArCCHiPi, loadersLArFHC);
 
-  PredictionInterp predLAr1d(systlist, this_calc, genLAr1d, loadersLArFHC);
-  PredictionInterp predLArCC0Pi1d(systlist, this_calc, genLArCC0Pi1d, loadersLArFHC);
-  PredictionInterp predLArCC1Pi1d(systlist, this_calc, genLArCC1Pi1d, loadersLArFHC);
-  PredictionInterp predLArCC2Pi1d(systlist, this_calc, genLArCC2Pi1d, loadersLArFHC);
-  PredictionInterp predLArCC3Pi1d(systlist, this_calc, genLArCC3Pi1d, loadersLArFHC);
-  PredictionInterp predLArCCHiPi1d(systlist, this_calc, genLArCCHiPi1d, loadersLArFHC);
+  PredictionInterp predLAr1d(systlist, 0, genLAr1d, loadersLArFHC);
+  PredictionInterp predLArCC0Pi1d(systlist, 0, genLArCC0Pi1d, loadersLArFHC);
+  PredictionInterp predLArCC1Pi1d(systlist, 0, genLArCC1Pi1d, loadersLArFHC);
+  PredictionInterp predLArCC2Pi1d(systlist, 0, genLArCC2Pi1d, loadersLArFHC);
+  PredictionInterp predLArCC3Pi1d(systlist, 0, genLArCC3Pi1d, loadersLArFHC);
+  PredictionInterp predLArCCHiPi1d(systlist, 0, genLArCCHiPi1d, loadersLArFHC);
 
-  PredictionInterp predWLAr(systlist, this_calc, WLAr, loadersLArFHC);
-  PredictionInterp predWLArCC0Pi(systlist, this_calc, WLArCC0Pi, loadersLArFHC);
-  PredictionInterp predWLArCC1Pi(systlist, this_calc, WLArCC1Pi, loadersLArFHC);
-  PredictionInterp predWLArCC2Pi(systlist, this_calc, WLArCC2Pi, loadersLArFHC);
-  PredictionInterp predWLArCC3Pi(systlist, this_calc, WLArCC3Pi, loadersLArFHC);
-  PredictionInterp predWLArCCHiPi(systlist, this_calc, WLArCCHiPi, loadersLArFHC);
+  PredictionInterp predWLAr(systlist, 0, WLAr, loadersLArFHC);
+  PredictionInterp predWLArCC0Pi(systlist, 0, WLArCC0Pi, loadersLArFHC);
+  PredictionInterp predWLArCC1Pi(systlist, 0, WLArCC1Pi, loadersLArFHC);
+  PredictionInterp predWLArCC2Pi(systlist, 0, WLArCC2Pi, loadersLArFHC);
+  PredictionInterp predWLArCC3Pi(systlist, 0, WLArCC3Pi, loadersLArFHC);
+  PredictionInterp predWLArCCHiPi(systlist, 0, WLArCCHiPi, loadersLArFHC);
 
-  PredictionInterp predQ2LAr(systlist, this_calc, Q2LAr, loadersLArFHC);
-  PredictionInterp predQ2LArCC0Pi(systlist, this_calc, Q2LArCC0Pi, loadersLArFHC);
-  PredictionInterp predQ2LArCC1Pi(systlist, this_calc, Q2LArCC1Pi, loadersLArFHC);
-  PredictionInterp predQ2LArCC2Pi(systlist, this_calc, Q2LArCC2Pi, loadersLArFHC);
-  PredictionInterp predQ2LArCC3Pi(systlist, this_calc, Q2LArCC3Pi, loadersLArFHC);
-  PredictionInterp predQ2LArCCHiPi(systlist, this_calc, Q2LArCCHiPi, loadersLArFHC);
+  PredictionInterp predQ2LAr(systlist, 0, Q2LAr, loadersLArFHC);
+  PredictionInterp predQ2LArCC0Pi(systlist, 0, Q2LArCC0Pi, loadersLArFHC);
+  PredictionInterp predQ2LArCC1Pi(systlist, 0, Q2LArCC1Pi, loadersLArFHC);
+  PredictionInterp predQ2LArCC2Pi(systlist, 0, Q2LArCC2Pi, loadersLArFHC);
+  PredictionInterp predQ2LArCC3Pi(systlist, 0, Q2LArCC3Pi, loadersLArFHC);
+  PredictionInterp predQ2LArCCHiPi(systlist, 0, Q2LArCCHiPi, loadersLArFHC);
   // RHC
-  PredictionInterp predLArRHC(systlist, this_calc, genLAr, loadersLArRHC);
-  PredictionInterp predLArCC0PiRHC(systlist, this_calc, genLArCC0Pi, loadersLArRHC);
-  PredictionInterp predLArCC1PiRHC(systlist, this_calc, genLArCC1Pi, loadersLArRHC);
-  PredictionInterp predLArCC2PiRHC(systlist, this_calc, genLArCC2Pi, loadersLArRHC);
-  PredictionInterp predLArCC3PiRHC(systlist, this_calc, genLArCC3Pi, loadersLArRHC);
+  PredictionInterp predLArRHC(systlist, 0, genLAr, loadersLArRHC);
+  PredictionInterp predLArCC0PiRHC(systlist, 0, genLArCC0Pi, loadersLArRHC);
+  PredictionInterp predLArCC1PiRHC(systlist, 0, genLArCC1Pi, loadersLArRHC);
+  PredictionInterp predLArCC2PiRHC(systlist, 0, genLArCC2Pi, loadersLArRHC);
+  PredictionInterp predLArCC3PiRHC(systlist, 0, genLArCC3Pi, loadersLArRHC);
 
-  PredictionInterp predLAr1dRHC(systlist, this_calc, genLAr1d, loadersLArRHC);
-  PredictionInterp predLArCC0Pi1dRHC(systlist, this_calc, genLArCC0Pi1d, loadersLArRHC);
-  PredictionInterp predLArCC1Pi1dRHC(systlist, this_calc, genLArCC1Pi1d, loadersLArRHC);
-  PredictionInterp predLArCC2Pi1dRHC(systlist, this_calc, genLArCC2Pi1d, loadersLArRHC);
-  PredictionInterp predLArCC3Pi1dRHC(systlist, this_calc, genLArCC3Pi1d, loadersLArRHC);
+  PredictionInterp predLAr1dRHC(systlist, 0, genLAr1d, loadersLArRHC);
+  PredictionInterp predLArCC0Pi1dRHC(systlist, 0, genLArCC0Pi1d, loadersLArRHC);
+  PredictionInterp predLArCC1Pi1dRHC(systlist, 0, genLArCC1Pi1d, loadersLArRHC);
+  PredictionInterp predLArCC2Pi1dRHC(systlist, 0, genLArCC2Pi1d, loadersLArRHC);
+  PredictionInterp predLArCC3Pi1dRHC(systlist, 0, genLArCC3Pi1d, loadersLArRHC);
 
-  PredictionInterp predWLArRHC(systlist, this_calc, WLAr, loadersLArRHC);
-  PredictionInterp predWLArCC0PiRHC(systlist, this_calc, WLArCC0Pi, loadersLArRHC);
-  PredictionInterp predWLArCC1PiRHC(systlist, this_calc, WLArCC1Pi, loadersLArRHC);
-  PredictionInterp predWLArCC2PiRHC(systlist, this_calc, WLArCC2Pi, loadersLArRHC);
-  PredictionInterp predWLArCC3PiRHC(systlist, this_calc, WLArCC3Pi, loadersLArRHC);
+  PredictionInterp predWLArRHC(systlist, 0, WLAr, loadersLArRHC);
+  PredictionInterp predWLArCC0PiRHC(systlist, 0, WLArCC0Pi, loadersLArRHC);
+  PredictionInterp predWLArCC1PiRHC(systlist, 0, WLArCC1Pi, loadersLArRHC);
+  PredictionInterp predWLArCC2PiRHC(systlist, 0, WLArCC2Pi, loadersLArRHC);
+  PredictionInterp predWLArCC3PiRHC(systlist, 0, WLArCC3Pi, loadersLArRHC);
 
-  PredictionInterp predQ2LArRHC(systlist, this_calc, Q2LAr, loadersLArRHC);
-  PredictionInterp predQ2LArCC0PiRHC(systlist, this_calc, Q2LArCC0Pi, loadersLArRHC);
-  PredictionInterp predQ2LArCC1PiRHC(systlist, this_calc, Q2LArCC1Pi, loadersLArRHC);
-  PredictionInterp predQ2LArCC2PiRHC(systlist, this_calc, Q2LArCC2Pi, loadersLArRHC);
-  PredictionInterp predQ2LArCC3PiRHC(systlist, this_calc, Q2LArCC3Pi, loadersLArRHC);
+  PredictionInterp predQ2LArRHC(systlist, 0, Q2LAr, loadersLArRHC);
+  PredictionInterp predQ2LArCC0PiRHC(systlist, 0, Q2LArCC0Pi, loadersLArRHC);
+  PredictionInterp predQ2LArCC1PiRHC(systlist, 0, Q2LArCC1Pi, loadersLArRHC);
+  PredictionInterp predQ2LArCC2PiRHC(systlist, 0, Q2LArCC2Pi, loadersLArRHC);
+  PredictionInterp predQ2LArCC3PiRHC(systlist, 0, Q2LArCC3Pi, loadersLArRHC);
 
   // GAr ND samples
   NoOscPredictionGenerator genGAr(axTrueRecoND, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV);
@@ -276,74 +275,109 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
   NoOscPredictionGenerator Q2GArCCHiPi(axRecoQ2, ((kFHC==1 && kPassND_FHC_NUMU) || (kFHC!=1 && kPassND_RHC_NUMU)) && kIsTrueGasFV && kRecoPi>3);
 
   // FHC
-  PredictionInterp predGAr(systlist, this_calc, genGAr, loadersGArFHC);
-  PredictionInterp predGArCC0Pi(systlist, this_calc, genGArCC0Pi, loadersGArFHC);
-  PredictionInterp predGArCC1Pi(systlist, this_calc, genGArCC1Pi, loadersGArFHC);
-  PredictionInterp predGArCC2Pi(systlist, this_calc, genGArCC2Pi, loadersGArFHC);
-  PredictionInterp predGArCC3Pi(systlist, this_calc, genGArCC3Pi, loadersGArFHC);
-  PredictionInterp predGArCCHiPi(systlist, this_calc, genGArCCHiPi, loadersGArFHC);
+  PredictionInterp predGAr(systlist, 0, genGAr, loadersGArFHC);
+  PredictionInterp predGArCC0Pi(systlist, 0, genGArCC0Pi, loadersGArFHC);
+  PredictionInterp predGArCC1Pi(systlist, 0, genGArCC1Pi, loadersGArFHC);
+  PredictionInterp predGArCC2Pi(systlist, 0, genGArCC2Pi, loadersGArFHC);
+  PredictionInterp predGArCC3Pi(systlist, 0, genGArCC3Pi, loadersGArFHC);
+  PredictionInterp predGArCCHiPi(systlist, 0, genGArCCHiPi, loadersGArFHC);
 
-  PredictionInterp predGAr1d(systlist, this_calc, genGAr1d, loadersGArFHC);
-  PredictionInterp predGArCC0Pi1d(systlist, this_calc, genGArCC0Pi1d, loadersGArFHC);
-  PredictionInterp predGArCC1Pi1d(systlist, this_calc, genGArCC1Pi1d, loadersGArFHC);
-  PredictionInterp predGArCC2Pi1d(systlist, this_calc, genGArCC2Pi1d, loadersGArFHC);
-  PredictionInterp predGArCC3Pi1d(systlist, this_calc, genGArCC3Pi1d, loadersGArFHC);
-  PredictionInterp predGArCCHiPi1d(systlist, this_calc, genGArCCHiPi1d, loadersGArFHC);
+  PredictionInterp predGAr1d(systlist, 0, genGAr1d, loadersGArFHC);
+  PredictionInterp predGArCC0Pi1d(systlist, 0, genGArCC0Pi1d, loadersGArFHC);
+  PredictionInterp predGArCC1Pi1d(systlist, 0, genGArCC1Pi1d, loadersGArFHC);
+  PredictionInterp predGArCC2Pi1d(systlist, 0, genGArCC2Pi1d, loadersGArFHC);
+  PredictionInterp predGArCC3Pi1d(systlist, 0, genGArCC3Pi1d, loadersGArFHC);
+  PredictionInterp predGArCCHiPi1d(systlist, 0, genGArCCHiPi1d, loadersGArFHC);
 
-  PredictionInterp predWGAr(systlist, this_calc, WGAr, loadersGArFHC);
-  PredictionInterp predWGArCC0Pi(systlist, this_calc, WGArCC0Pi, loadersGArFHC);
-  PredictionInterp predWGArCC1Pi(systlist, this_calc, WGArCC1Pi, loadersGArFHC);
-  PredictionInterp predWGArCC2Pi(systlist, this_calc, WGArCC2Pi, loadersGArFHC);
-  PredictionInterp predWGArCC3Pi(systlist, this_calc, WGArCC3Pi, loadersGArFHC);
-  PredictionInterp predWGArCCHiPi(systlist, this_calc, WGArCCHiPi, loadersGArFHC);
+  PredictionInterp predWGAr(systlist, 0, WGAr, loadersGArFHC);
+  PredictionInterp predWGArCC0Pi(systlist, 0, WGArCC0Pi, loadersGArFHC);
+  PredictionInterp predWGArCC1Pi(systlist, 0, WGArCC1Pi, loadersGArFHC);
+  PredictionInterp predWGArCC2Pi(systlist, 0, WGArCC2Pi, loadersGArFHC);
+  PredictionInterp predWGArCC3Pi(systlist, 0, WGArCC3Pi, loadersGArFHC);
+  PredictionInterp predWGArCCHiPi(systlist, 0, WGArCCHiPi, loadersGArFHC);
 
-  PredictionInterp predQ2GAr(systlist, this_calc, Q2GAr, loadersGArFHC);
-  PredictionInterp predQ2GArCC0Pi(systlist, this_calc, Q2GArCC0Pi, loadersGArFHC);
-  PredictionInterp predQ2GArCC1Pi(systlist, this_calc, Q2GArCC1Pi, loadersGArFHC);
-  PredictionInterp predQ2GArCC2Pi(systlist, this_calc, Q2GArCC2Pi, loadersGArFHC);
-  PredictionInterp predQ2GArCC3Pi(systlist, this_calc, Q2GArCC3Pi, loadersGArFHC);
-  PredictionInterp predQ2GArCCHiPi(systlist, this_calc, Q2GArCCHiPi, loadersGArFHC);
+  PredictionInterp predQ2GAr(systlist, 0, Q2GAr, loadersGArFHC);
+  PredictionInterp predQ2GArCC0Pi(systlist, 0, Q2GArCC0Pi, loadersGArFHC);
+  PredictionInterp predQ2GArCC1Pi(systlist, 0, Q2GArCC1Pi, loadersGArFHC);
+  PredictionInterp predQ2GArCC2Pi(systlist, 0, Q2GArCC2Pi, loadersGArFHC);
+  PredictionInterp predQ2GArCC3Pi(systlist, 0, Q2GArCC3Pi, loadersGArFHC);
+  PredictionInterp predQ2GArCCHiPi(systlist, 0, Q2GArCCHiPi, loadersGArFHC);
   // RHC
-  PredictionInterp predGArRHC(systlist, this_calc, genGAr, loadersGArRHC);
-  PredictionInterp predGArCC0PiRHC(systlist, this_calc, genGArCC0Pi, loadersGArRHC);
-  PredictionInterp predGArCC1PiRHC(systlist, this_calc, genGArCC1Pi, loadersGArRHC);
-  PredictionInterp predGArCC2PiRHC(systlist, this_calc, genGArCC2Pi, loadersGArRHC);
-  PredictionInterp predGArCC3PiRHC(systlist, this_calc, genGArCC3Pi, loadersGArRHC);
+  PredictionInterp predGArRHC(systlist, 0, genGAr, loadersGArRHC);
+  PredictionInterp predGArCC0PiRHC(systlist, 0, genGArCC0Pi, loadersGArRHC);
+  PredictionInterp predGArCC1PiRHC(systlist, 0, genGArCC1Pi, loadersGArRHC);
+  PredictionInterp predGArCC2PiRHC(systlist, 0, genGArCC2Pi, loadersGArRHC);
+  PredictionInterp predGArCC3PiRHC(systlist, 0, genGArCC3Pi, loadersGArRHC);
 
-  PredictionInterp predGAr1dRHC(systlist, this_calc, genGAr1d, loadersGArRHC);
-  PredictionInterp predGArCC0Pi1dRHC(systlist, this_calc, genGArCC0Pi1d, loadersGArRHC);
-  PredictionInterp predGArCC1Pi1dRHC(systlist, this_calc, genGArCC1Pi1d, loadersGArRHC);
-  PredictionInterp predGArCC2Pi1dRHC(systlist, this_calc, genGArCC2Pi1d, loadersGArRHC);
-  PredictionInterp predGArCC3Pi1dRHC(systlist, this_calc, genGArCC3Pi1d, loadersGArRHC);
+  PredictionInterp predGAr1dRHC(systlist, 0, genGAr1d, loadersGArRHC);
+  PredictionInterp predGArCC0Pi1dRHC(systlist, 0, genGArCC0Pi1d, loadersGArRHC);
+  PredictionInterp predGArCC1Pi1dRHC(systlist, 0, genGArCC1Pi1d, loadersGArRHC);
+  PredictionInterp predGArCC2Pi1dRHC(systlist, 0, genGArCC2Pi1d, loadersGArRHC);
+  PredictionInterp predGArCC3Pi1dRHC(systlist, 0, genGArCC3Pi1d, loadersGArRHC);
 
-  PredictionInterp predWGArRHC(systlist, this_calc, WGAr, loadersGArRHC);
-  PredictionInterp predWGArCC0PiRHC(systlist, this_calc, WGArCC0Pi, loadersGArRHC);
-  PredictionInterp predWGArCC1PiRHC(systlist, this_calc, WGArCC1Pi, loadersGArRHC);
-  PredictionInterp predWGArCC2PiRHC(systlist, this_calc, WGArCC2Pi, loadersGArRHC);
-  PredictionInterp predWGArCC3PiRHC(systlist, this_calc, WGArCC3Pi, loadersGArRHC);
+  PredictionInterp predWGArRHC(systlist, 0, WGAr, loadersGArRHC);
+  PredictionInterp predWGArCC0PiRHC(systlist, 0, WGArCC0Pi, loadersGArRHC);
+  PredictionInterp predWGArCC1PiRHC(systlist, 0, WGArCC1Pi, loadersGArRHC);
+  PredictionInterp predWGArCC2PiRHC(systlist, 0, WGArCC2Pi, loadersGArRHC);
+  PredictionInterp predWGArCC3PiRHC(systlist, 0, WGArCC3Pi, loadersGArRHC);
 
-  PredictionInterp predQ2GArRHC(systlist, this_calc, Q2GAr, loadersGArRHC);
-  PredictionInterp predQ2GArCC0PiRHC(systlist, this_calc, Q2GArCC0Pi, loadersGArRHC);
-  PredictionInterp predQ2GArCC1PiRHC(systlist, this_calc, Q2GArCC1Pi, loadersGArRHC);
-  PredictionInterp predQ2GArCC2PiRHC(systlist, this_calc, Q2GArCC2Pi, loadersGArRHC);
-  PredictionInterp predQ2GArCC3PiRHC(systlist, this_calc, Q2GArCC3Pi, loadersGArRHC);
+  PredictionInterp predQ2GArRHC(systlist, 0, Q2GAr, loadersGArRHC);
+  PredictionInterp predQ2GArCC0PiRHC(systlist, 0, Q2GArCC0Pi, loadersGArRHC);
+  PredictionInterp predQ2GArCC1PiRHC(systlist, 0, Q2GArCC1Pi, loadersGArRHC);
+  PredictionInterp predQ2GArCC2PiRHC(systlist, 0, Q2GArCC2Pi, loadersGArRHC);
+  PredictionInterp predQ2GArCC3PiRHC(systlist, 0, Q2GArCC3Pi, loadersGArRHC);
 
   // Additional GAr samples to match CM's 
   // All reco W and Q2
   // True categories
   // CC inclusive
   NoOscPredictionGenerator Q2True(axRecoQ2, isCC==1 && kFHC==1 && kLepPDG==13 && kIsTrueGasFV);
+  NoOscPredictionGenerator WTrue(axRecoW, isCC==1 && kFHC==1 && kLepPDG==13 && kIsTrueGasFV);
+  PredictionInterp predQ2True(systlist, 0, Q2True, loadersGArFHC);
+  PredictionInterp predWTrue(systlist, 0, WTrue, loadersGArFHC);
   // 0 pi
-
+  NoOscPredictionGenerator Q2True_0Pi(axRecoQ2, isCC==1 && kFHC==1 && kLepPDG==13 && kPi==0 && kIsTrueGasFV);
+  NoOscPredictionGenerator WTrue_0Pi(axRecoW, isCC==1 && kFHC==1 && kLepPDG==13 && kPi==0 && kIsTrueGasFV);
+  PredictionInterp predQ2True_0Pi(systlist, 0, Q2True_0Pi, loadersGArFHC);
+  PredictionInterp predWTrue_0Pi(systlist, 0, WTrue_0Pi, loadersGArFHC);
   // 1 charged pion
-
+  NoOscPredictionGenerator Q2True_1CPi(axRecoQ2, isCC==1 && kFHC==1 && kLepPDG==13 && kChargedPi==1 && kPi==1 && kIsTrueGasFV);
+  NoOscPredictionGenerator WTrue_1CPi(axRecoW, isCC==1 && kFHC==1 && kLepPDG==13 && kChargedPi==1 && kPi==1 && kIsTrueGasFV);
+  PredictionInterp predQ2True_1CPi(systlist, 0, Q2True_1CPi, loadersGArFHC);
+  PredictionInterp predWTrue_1CPi(systlist, 0, WTrue_1CPi, loadersGArFHC);
   // 1 neutral pion
-
+  NoOscPredictionGenerator Q2True_1Pi0(axRecoQ2, isCC==1 && kFHC==1 && kLepPDG==13 && kChargedPi==0 && kPi==1 && kIsTrueGasFV);
+  NoOscPredictionGenerator WTrue_1Pi0(axRecoW, isCC==1 && kFHC==1 && kLepPDG==13 && kChargedPi==0 && kPi==1 && kIsTrueGasFV);
+  PredictionInterp predQ2True_1Pi0(systlist, 0, Q2True_1Pi0, loadersGArFHC);
+  PredictionInterp predWTrue_1Pi0(systlist, 0, WTrue_1Pi0, loadersGArFHC);
   // 2 pions
-
-  // More than 3 pions
-
+  NoOscPredictionGenerator Q2True_2Pi(axRecoQ2, isCC==1 && kFHC==1 && kLepPDG==13 && kPi==2 && kIsTrueGasFV);
+  NoOscPredictionGenerator WTrue_2Pi(axRecoW, isCC==1 && kFHC==1 && kLepPDG==13 && kPi==2 && kIsTrueGasFV);
+  PredictionInterp predQ2True_2Pi(systlist, 0, Q2True_2Pi, loadersGArFHC);
+  PredictionInterp predWTrue_2Pi(systlist, 0, WTrue_2Pi, loadersGArFHC);
+  // More than 2 pions
+  NoOscPredictionGenerator Q2True_HiPi(axRecoQ2, isCC==1 && kFHC==1 && kLepPDG==13 && kPi>=3 && kIsTrueGasFV);
+  NoOscPredictionGenerator WTrue_HiPi(axRecoW, isCC==1 && kFHC==1 && kLepPDG==13 && kPi>=3 && kIsTrueGasFV);
+  PredictionInterp predQ2True_HiPi(systlist, 0, Q2True_HiPi, loadersGArFHC);
+  PredictionInterp predWTrue_HiPi(systlist, 0, WTrue_HiPi, loadersGArFHC);
   // Reco categories
+  // Already got the 0 pi one made
+  // 1 charged pion
+  NoOscPredictionGenerator Q2Reco_1CPi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoChargedPi==1 && kRecoPi==1);
+  NoOscPredictionGenerator WReco_1CPi(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoChargedPi==1 && kRecoPi==1);
+  PredictionInterp predQ2Reco_1CPi(systlist, 0, Q2Reco_1CPi, loadersGArFHC);
+  PredictionInterp predWReco_1CPi(systlist, 0, WReco_1CPi, loadersGArFHC);
+  // 1 neutral pion
+  NoOscPredictionGenerator Q2Reco_1Pi0(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoChargedPi==0 && kRecoPi==1);
+  NoOscPredictionGenerator WReco_1Pi0(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoChargedPi==0 && kRecoPi==1);
+  PredictionInterp predQ2Reco_1Pi0(systlist, 0, Q2Reco_1Pi0, loadersGArFHC);
+  PredictionInterp predWReco_1Pi0(systlist, 0, WReco_1Pi0, loadersGArFHC);
+  // 2 pion already exists
+  // More than 2 pions
+  NoOscPredictionGenerator Q2Reco_HiPi(axRecoQ2, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi>=3);
+  NoOscPredictionGenerator WReco_HiPi(axRecoW, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoPi>=3);
+  PredictionInterp predQ2Reco_HiPi(systlist, 0, Q2Reco_HiPi, loadersGArFHC);
+  PredictionInterp predWReco_HiPi(systlist, 0, WReco_HiPi, loadersGArFHC);
 
   loadersGArFHC.Go();
   loadersGArRHC.Go();
@@ -763,59 +797,59 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
     hQ2LArCCHiPi->Write("hQ2LArCCHiPiRatio");
 
     // FD plots
-    TH1 *hNumuFHCreco = predNumuFHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
-    setHistAttr(hNumuFHCreco);
-    TH1 *hNumuRHCreco = predNumuRHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
-    setHistAttr(hNumuRHCreco);
-    TH1 *hNueFHCreco = predNueFHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
-    setHistAttr(hNueFHCreco);
-    TH1 *hNueRHCreco = predNueRHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
-    setHistAttr(hNueRHCreco);
-    hNumuFHCreco->Write("hNumuFHCreco");
-    hNumuRHCreco->Write("hNumuRHCreco");
-    hNueFHCreco->Write("hNueFHCreco");
-    hNueRHCreco->Write("hNueRHCreco");
+    // TH1 *hNumuFHCreco = predNumuFHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
+    // setHistAttr(hNumuFHCreco);
+    // TH1 *hNumuRHCreco = predNumuRHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
+    // setHistAttr(hNumuRHCreco);
+    // TH1 *hNueFHCreco = predNueFHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
+    // setHistAttr(hNueFHCreco);
+    // TH1 *hNueRHCreco = predNueRHCreco.Predict(this_calc).MockData(pot_fd).ToTH1(pot_fd);
+    // setHistAttr(hNueRHCreco);
+    // hNumuFHCreco->Write("hNumuFHCreco");
+    // hNumuRHCreco->Write("hNumuRHCreco");
+    // hNueFHCreco->Write("hNueFHCreco");
+    // hNueRHCreco->Write("hNueRHCreco");
     // NuWro
-    TH1 *hNumuFHCrecoNuwro = predNumuFHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
-    setHistAttr(hNumuFHCrecoNuwro);
-    TH1 *hNumuRHCrecoNuwro = predNumuRHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
-    setHistAttr(hNumuRHCrecoNuwro);
-    TH1 *hNueFHCrecoNuwro = predNueFHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
-    setHistAttr(hNueFHCrecoNuwro);
-    TH1 *hNueRHCrecoNuwro = predNueRHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
-    setHistAttr(hNueRHCrecoNuwro);
-    hNumuFHCrecoNuwro->Write("hNumuFHCrecoNuwro");
-    hNumuRHCrecoNuwro->Write("hNumuRHCrecoNuwro");
-    hNueFHCrecoNuwro->Write("hNueFHCrecoNuwro");
-    hNueRHCrecoNuwro->Write("hNueRHCrecoNuwro");
-    hNumuFHCrecoNuwro->SetLineColor(kRed);
-    hNumuRHCrecoNuwro->SetLineColor(kRed);
-    hNueFHCrecoNuwro->SetLineColor(kRed);
-    hNueRHCrecoNuwro->SetLineColor(kRed);
-    THStack *hsNumuFHCreco = new THStack("hsNumuFHCreco", "#nu_{#mu} FHC; E_{#nu, reco} (GeV); Events / GeV");
-    hNumuFHCreco->Scale(1.,"width");
-    hNumuFHCrecoNuwro->Scale(1.,"width");
-    hsNumuFHCreco->Add(hNumuFHCreco);
-    hsNumuFHCreco->Add(hNumuFHCrecoNuwro);
-    hsNumuFHCreco->Write();
-    THStack *hsNumuRHCreco = new THStack("hsNumuRHCreco", "#nu_{#mu} RHC; E_{#nu, reco} (GeV); Events / GeV");
-    hNumuRHCreco->Scale(1.,"width");
-    hNumuRHCrecoNuwro->Scale(1.,"width");
-    hsNumuRHCreco->Add(hNumuRHCreco);
-    hsNumuRHCreco->Add(hNumuRHCrecoNuwro);
-    hsNumuRHCreco->Write();
-    THStack *hsNueFHCreco = new THStack("hsNueFHCreco", "#nu_{e} FHC; E_{#nu, reco} (GeV); Events / GeV");
-    hNueFHCreco->Scale(1.,"width");
-    hNueFHCrecoNuwro->Scale(1.,"width");
-    hsNueFHCreco->Add(hNueFHCreco);
-    hsNueFHCreco->Add(hNueFHCrecoNuwro);
-    hsNueFHCreco->Write();
-    THStack *hsNueRHCreco = new THStack("hsNueRHCreco", "#nu_{e} RHC; E_{#nu, reco} (GeV); Events / GeV");
-    hNueRHCreco->Scale(1.,"width");
-    hNueRHCrecoNuwro->Scale(1.,"width");
-    hsNueRHCreco->Add(hNueRHCreco);
-    hsNueRHCreco->Add(hNueRHCrecoNuwro);
-    hsNueRHCreco->Write();
+    // TH1 *hNumuFHCrecoNuwro = predNumuFHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
+    // setHistAttr(hNumuFHCrecoNuwro);
+    // TH1 *hNumuRHCrecoNuwro = predNumuRHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
+    // setHistAttr(hNumuRHCrecoNuwro);
+    // TH1 *hNueFHCrecoNuwro = predNueFHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
+    // setHistAttr(hNueFHCrecoNuwro);
+    // TH1 *hNueRHCrecoNuwro = predNueRHCreco.PredictSyst(this_calc, SystShifts(systlist.at(0), 1)).MockData(pot_fd).ToTH1(pot_fd);
+    // setHistAttr(hNueRHCrecoNuwro);
+    // hNumuFHCrecoNuwro->Write("hNumuFHCrecoNuwro");
+    // hNumuRHCrecoNuwro->Write("hNumuRHCrecoNuwro");
+    // hNueFHCrecoNuwro->Write("hNueFHCrecoNuwro");
+    // hNueRHCrecoNuwro->Write("hNueRHCrecoNuwro");
+    // hNumuFHCrecoNuwro->SetLineColor(kRed);
+    // hNumuRHCrecoNuwro->SetLineColor(kRed);
+    // hNueFHCrecoNuwro->SetLineColor(kRed);
+    // hNueRHCrecoNuwro->SetLineColor(kRed);
+    // THStack *hsNumuFHCreco = new THStack("hsNumuFHCreco", "#nu_{#mu} FHC; E_{#nu, reco} (GeV); Events / GeV");
+    // hNumuFHCreco->Scale(1.,"width");
+    // hNumuFHCrecoNuwro->Scale(1.,"width");
+    // hsNumuFHCreco->Add(hNumuFHCreco);
+    // hsNumuFHCreco->Add(hNumuFHCrecoNuwro);
+    // hsNumuFHCreco->Write();
+    // THStack *hsNumuRHCreco = new THStack("hsNumuRHCreco", "#nu_{#mu} RHC; E_{#nu, reco} (GeV); Events / GeV");
+    // hNumuRHCreco->Scale(1.,"width");
+    // hNumuRHCrecoNuwro->Scale(1.,"width");
+    // hsNumuRHCreco->Add(hNumuRHCreco);
+    // hsNumuRHCreco->Add(hNumuRHCrecoNuwro);
+    // hsNumuRHCreco->Write();
+    // THStack *hsNueFHCreco = new THStack("hsNueFHCreco", "#nu_{e} FHC; E_{#nu, reco} (GeV); Events / GeV");
+    // hNueFHCreco->Scale(1.,"width");
+    // hNueFHCrecoNuwro->Scale(1.,"width");
+    // hsNueFHCreco->Add(hNueFHCreco);
+    // hsNueFHCreco->Add(hNueFHCrecoNuwro);
+    // hsNueFHCreco->Write();
+    // THStack *hsNueRHCreco = new THStack("hsNueRHCreco", "#nu_{e} RHC; E_{#nu, reco} (GeV); Events / GeV");
+    // hNueRHCreco->Scale(1.,"width");
+    // hNueRHCrecoNuwro->Scale(1.,"width");
+    // hsNueRHCreco->Add(hNueRHCreco);
+    // hsNueRHCreco->Add(hNueRHCrecoNuwro);
+    // hsNueRHCreco->Write();
   }
 
   // GAr FHC
@@ -1216,7 +1250,176 @@ void pionMultiPlots(const char *outFile, bool doLAr=false,
   hQ2GArCC2Pi->Write("hQ2GArCC2PiRatio");
   hQ2GArCC3Pi->Write("hQ2GArCC3PiRatio");
   hQ2GArCCHiPi->Write("hQ2GArCCHiPiRatio");
-  
+
+  SystShifts fakedatashift(systlist.at(0), 1);
+  // Now make the plots that match CM's ones
+  THStack *hsQ2True = new THStack("hsQ2True", "True selections; Q^{2}_{reco} / GeV^{2}; NuWro / GENIE");
+  THStack *hsWTrue  = new THStack("hsWTrue", "True selections; W_{reco} / GeV; NuWro / GENIE");
+  // CC inclusive
+  TH1 *hQ2True       = predQ2True.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hQ2True_nuwro = predQ2True.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hQ2True->SetTitle("CC inc.");
+  hQ2True_nuwro->SetTitle("CC inc.");
+  hQ2True->SetLineColor(kBlack);
+  hQ2True_nuwro->SetLineColor(kBlack);
+  hQ2True_nuwro->Divide(hQ2True);
+  TH1 *hWTrue       = predWTrue.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hWTrue_nuwro = predWTrue.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hWTrue->SetTitle("CC inc.");
+  hWTrue_nuwro->SetTitle("CC inc.");
+  hWTrue->SetLineColor(kBlack);
+  hWTrue_nuwro->SetLineColor(kBlack);
+  hWTrue_nuwro->Divide(hWTrue);
+  // 0pi
+  TH1 *hQ2True_0Pi       = predQ2True_0Pi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hQ2True_0Pi_nuwro = predQ2True_0Pi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hQ2True_0Pi->SetTitle("0#pi");
+  hQ2True_0Pi_nuwro->SetTitle("0#pi");
+  hQ2True_0Pi->SetLineColor(kRed);
+  hQ2True_0Pi_nuwro->SetLineColor(kRed);
+  hQ2True_0Pi_nuwro->Divide(hQ2True_0Pi);
+  TH1 *hWTrue_0Pi       = predWTrue_0Pi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hWTrue_0Pi_nuwro = predWTrue_0Pi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hWTrue_0Pi->SetTitle("0#pi");
+  hWTrue_0Pi_nuwro->SetTitle("0#pi");
+  hWTrue_0Pi->SetLineColor(kRed);
+  hWTrue_0Pi_nuwro->SetLineColor(kRed);
+  hWTrue_0Pi_nuwro->Divide(hWTrue_0Pi);
+  // 1 charged pion
+  TH1 *hQ2True_1CPi       = predQ2True_1CPi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hQ2True_1CPi_nuwro = predQ2True_1CPi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hQ2True_1CPi->SetTitle("1#pi^{#pm}");
+  hQ2True_1CPi_nuwro->SetTitle("1#pi^{#pm}");
+  hQ2True_1CPi->SetLineColor(kBlue);
+  hQ2True_1CPi_nuwro->SetLineColor(kBlue);
+  hQ2True_1CPi_nuwro->Divide(hQ2True_1CPi);
+  TH1 *hWTrue_1CPi       = predWTrue_1CPi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hWTrue_1CPi_nuwro = predWTrue_1CPi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hWTrue_1CPi->SetTitle("1#pi^{#pm}");
+  hWTrue_1CPi_nuwro->SetTitle("1#pi^{#pm}");
+  hWTrue_1CPi->SetLineColor(kBlue);
+  hWTrue_1CPi_nuwro->SetLineColor(kBlue);
+  hWTrue_1CPi_nuwro->Divide(hWTrue_1CPi);
+  // 1 neutral pion
+  TH1 *hQ2True_1Pi0       = predQ2True_1Pi0.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hQ2True_1Pi0_nuwro = predQ2True_1Pi0.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hQ2True_1Pi0->SetTitle("1#pi^{0}");
+  hQ2True_1Pi0_nuwro->SetTitle("1#pi^{0}");
+  hQ2True_1Pi0->SetLineColor(kBlue);
+  hQ2True_1Pi0_nuwro->SetLineColor(kBlue);
+  hQ2True_1Pi0_nuwro->Divide(hQ2True_1Pi0);
+  TH1 *hWTrue_1Pi0       = predWTrue_1Pi0.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hWTrue_1Pi0_nuwro = predWTrue_1Pi0.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hWTrue_1Pi0->SetTitle("1#pi^{0}");
+  hWTrue_1Pi0_nuwro->SetTitle("1#pi^{0}");
+  hWTrue_1Pi0->SetLineColor(kGreen+1);
+  hWTrue_1Pi0_nuwro->SetLineColor(kGreen+1);
+  hWTrue_1Pi0_nuwro->Divide(hWTrue_1Pi0);
+  // 2 pions
+  TH1 *hQ2True_2Pi       = predQ2True_2Pi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hQ2True_2Pi_nuwro = predQ2True_2Pi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hQ2True_2Pi->SetTitle("2#pi");
+  hQ2True_2Pi_nuwro->SetTitle("2#pi");
+  hQ2True_2Pi->SetLineColor(kMagenta+2);
+  hQ2True_2Pi_nuwro->SetLineColor(kMagenta+2);
+  hQ2True_2Pi_nuwro->Divide(hQ2True_2Pi);
+  TH1 *hWTrue_2Pi       = predWTrue_2Pi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hWTrue_2Pi_nuwro = predWTrue_2Pi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hWTrue_2Pi->SetTitle("2#pi");
+  hWTrue_2Pi_nuwro->SetTitle("2#pi");
+  hWTrue_2Pi->SetLineColor(kMagenta+2);
+  hWTrue_2Pi_nuwro->SetLineColor(kMagenta+2);
+  hWTrue_2Pi_nuwro->Divide(hWTrue_2Pi);
+  // 3 or more pions
+  TH1 *hQ2True_HiPi       = predQ2True_HiPi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hQ2True_HiPi_nuwro = predQ2True_HiPi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hQ2True_HiPi->SetTitle(">2#pi");
+  hQ2True_HiPi_nuwro->SetTitle(">2#pi");
+  hQ2True_HiPi->SetLineColor(kMagenta+2);
+  hQ2True_HiPi_nuwro->SetLineColor(kMagenta+2);
+  hQ2True_HiPi_nuwro->Divide(hQ2True_HiPi);
+  TH1 *hWTrue_HiPi       = predWTrue_HiPi.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hWTrue_HiPi_nuwro = predWTrue_HiPi.PredictSyst(0, fakedatashift).FakeData(pot_nd).ToTH1(pot_nd);
+  hWTrue_HiPi->SetTitle(">2#pi");
+  hWTrue_HiPi_nuwro->SetTitle(">2#pi");
+  hWTrue_HiPi->SetLineColor(kMagenta+2);
+  hWTrue_HiPi_nuwro->SetLineColor(kMagenta+2);
+  hWTrue_HiPi_nuwro->Divide(hWTrue_HiPi);
+
+  for (int b=1; b<hQ2True->GetNbinsX()+1; b++) {
+    // Suppress if less than 100 true events in bin
+    if (hQ2True->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hQ2True_nuwro->SetBinContent(b, 3.);
+      hQ2True_nuwro->SetBinError(b, 0.);
+    }
+    if (hWTrue->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hWTrue_nuwro->SetBinContent(b, 3.);
+      hWTrue_nuwro->SetBinError(b, 0.);
+    }
+
+    if (hQ2True_0Pi->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hQ2True_0Pi_nuwro->SetBinContent(b, 3.);
+      hQ2True_0Pi_nuwro->SetBinError(b, 0.);
+    }
+    if (hWTrue_0Pi->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hWTrue_0Pi_nuwro->SetBinContent(b, 3.);
+      hWTrue_0Pi_nuwro->SetBinError(b, 0.);
+    }
+
+    if (hQ2True_1CPi->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hQ2True_1CPi_nuwro->SetBinContent(b, 3.);
+      hQ2True_1CPi_nuwro->SetBinError(b, 0.);
+    }
+    if (hWTrue_1CPi->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hWTrue_1CPi_nuwro->SetBinContent(b, 3.);
+      hWTrue_1CPi_nuwro->SetBinError(b, 0.);
+    }
+
+    if (hQ2True_1Pi0->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hQ2True_1Pi0_nuwro->SetBinContent(b, 3.);
+      hQ2True_1Pi0_nuwro->SetBinError(b, 0.);
+    }
+    if (hWTrue_1Pi0->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hWTrue_1Pi0_nuwro->SetBinContent(b, 3.);
+      hWTrue_1Pi0_nuwro->SetBinError(b, 0.);
+    }
+
+    if (hQ2True_2Pi->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hQ2True_2Pi_nuwro->SetBinContent(b, 3.);
+      hQ2True_2Pi_nuwro->SetBinError(b, 0.);
+    }
+    if (hWTrue_2Pi->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hWTrue_2Pi_nuwro->SetBinContent(b, 3.);
+      hWTrue_2Pi_nuwro->SetBinError(b, 0.);
+    }
+
+    if (hQ2True_HiPi->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hQ2True_HiPi_nuwro->SetBinContent(b, 3.);
+      hQ2True_HiPi_nuwro->SetBinError(b, 0.);
+    }
+    if (hWTrue_HiPi->GetBinContent(b) * (1.934e20/1e21) < 100.) {
+      hWTrue_HiPi_nuwro->SetBinContent(b, 3.);
+      hWTrue_HiPi_nuwro->SetBinError(b, 0.);
+    }
+
+  }
+
+  hsQ2True->Add(hQ2True_nuwro);
+  hsWTrue->Add(hWTrue_nuwro);
+  hsQ2True->Add(hQ2True_0Pi_nuwro);
+  hsWTrue->Add(hWTrue_0Pi_nuwro);
+  hsQ2True->Add(hQ2True_1CPi_nuwro);
+  hsWTrue->Add(hWTrue_1CPi_nuwro);
+  hsQ2True->Add(hQ2True_1Pi0_nuwro);
+  hsWTrue->Add(hWTrue_1Pi0_nuwro);
+  hsQ2True->Add(hQ2True_2Pi_nuwro);
+  hsWTrue->Add(hWTrue_2Pi_nuwro);
+  hsQ2True->Add(hQ2True_HiPi_nuwro);
+  hsWTrue->Add(hWTrue_HiPi_nuwro);
+
+  hsQ2True->Write();
+  hsWTrue->Write();
+
   fout->Close();
   delete fout;
 
