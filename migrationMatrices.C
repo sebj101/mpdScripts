@@ -57,22 +57,42 @@ std::string catName(const int cat)
   else if (cat==2) name="1#pi^{#pm}";
   else if (cat==3) name="1#pi^{0}";
   else if (cat==4) name="2#pi";
-  else if (cat==5) name="Other";
+  else if (cat==5) name=">2#pi";
   return name;
 }
 
 void makeConfusionMatrix(TH2* h2)
 {
+  setHistAttr(h2);
   for (int binX=1; binX<h2->GetNbinsX()+1; binX++) {
-    double colInt       = h2->Integral(binX, binX, 0, h2->GetNbinsY()+1);
+    double colInt = h2->Integral(binX, binX, 0, h2->GetNbinsY()+1);
+    h2->GetXaxis()->SetBinLabel(binX, catName(binX).c_str());
+    h2->GetYaxis()->SetBinLabel(binX, catName(binX).c_str());
     for (int binY=1; binY<h2->GetNbinsY()+1; binY++) {
       h2->SetBinContent(binX, binY, h2->GetBinContent(binX, binY) / colInt);
     }
   }
 }
 
+TH2* makeConfusionMatrix(TH2* hin, const char* name, const char* title)
+{
+  TH2 *h2 = (TH2*)hin->Clone(name);
+  h2->SetTitle(title);
+  setHistAttr(h2);
+  for (int binX=1; binX<h2->GetNbinsX()+1; binX++) {
+    double colInt = h2->Integral(binX, binX, 0, h2->GetNbinsY()+1);
+    h2->GetXaxis()->SetBinLabel(binX, catName(binX).c_str());
+    h2->GetYaxis()->SetBinLabel(binX, catName(binX).c_str());
+    for (int binY=1; binY<h2->GetNbinsY()+1; binY++) {
+      h2->SetBinContent(binX, binY, h2->GetBinContent(binX, binY) / colInt);
+    }
+  }
+  return h2;
+}
+
 using namespace ana;
 
+const double mmu = 0.10566; // GeV/c^2
 // POT for n years
 const double years = 1.; // of POT
 const double pot_fd = years * POT120 * 40/1.13;
@@ -123,7 +143,22 @@ const Var kTrueCategory({"dune.nipip", "dune.nipim", "dune.nipi0"},
 			  else cat=5;
 			  return cat;
 			});
-
+// Reco Q2
+const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
+		  [](const caf::StandardRecord* sr) {
+		    double pmu = sqrt(sr->dune.Elep_reco*sr->dune.Elep_reco - mmu*mmu);
+		    double q2 = 2 * sr->dune.Ev_reco * (sr->dune.Elep_reco - pmu*TMath::Cos(sr->dune.theta_reco)) - mmu*mmu;
+		    return q2;
+		  });
+// Reco W
+const Var kRecoW({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
+		 [](const caf::StandardRecord* sr) {
+		   double w = 0;
+		   double pmu = sqrt(sr->dune.Elep_reco*sr->dune.Elep_reco - mmu*mmu);
+		   double q2 = 2 * sr->dune.Ev_reco * (sr->dune.Elep_reco - pmu*TMath::Cos(sr->dune.theta_reco)) - mmu*mmu;
+		   w = TMath::Sqrt(-q2 + 2 * 0.939 * (sr->dune.Ev_reco-sr->dune.Elep_reco) + 0.939*0.939);
+		   return w;
+		 });
 // HC
 const Var kFHC = SIMPLEVAR(dune.isFHC);
 
@@ -181,6 +216,21 @@ void migrationMatrices(const char *outfile,
   // Reco vs true categories
   NoOscPredictionGenerator genFhcCat(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV);
   PredictionInterp predFhcCat(systlist, 0, genFhcCat, loadersGArFHC);
+  // Categories for various bins of Q2 and W
+  // W
+  NoOscPredictionGenerator genFhcCatW1(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoW<1.); 
+  PredictionInterp predFhcCatW1(systlist, 0, genFhcCatW1, loadersGArFHC);
+  NoOscPredictionGenerator genFhcCatW2(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoW>1. && kRecoW<2.); 
+  PredictionInterp predFhcCatW2(systlist, 0, genFhcCatW2, loadersGArFHC);
+  NoOscPredictionGenerator genFhcCatW3(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoW>2.); 
+  PredictionInterp predFhcCatW3(systlist, 0, genFhcCatW3, loadersGArFHC);
+
+  NoOscPredictionGenerator genFhcCatQ21(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoQ2<1.); // Q2
+  PredictionInterp predFhcCatQ21(systlist, 0, genFhcCatQ21, loadersGArFHC);
+  NoOscPredictionGenerator genFhcCatQ22(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoQ2>1. && kRecoQ2<2.); 
+  PredictionInterp predFhcCatQ22(systlist, 0, genFhcCatQ22, loadersGArFHC);
+  NoOscPredictionGenerator genFhcCatQ23(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoQ2>2.); 
+  PredictionInterp predFhcCatQ23(systlist, 0, genFhcCatQ23, loadersGArFHC);
 
   loadersGArFHC.Go();
   // loadersGArRHC.Go();
@@ -325,6 +375,27 @@ void migrationMatrices(const char *outfile,
   h2CHad_nuwro_confus->SetTitle("Charged hadron multiplicity confusion matrix in HPgTPC (NuWro shifts); N_{had, true}; N_{had, reco}; Probability");
   h2CHad_confus->Write("h2CHad_confus");
   h2CHad_nuwro_confus->Write("h2CHad_nuwro_confus");
+
+  // Reco vs true category for various W and Q2
+  TH2 *h2CatW1 = predFhcCatW1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2CatW1_confus = makeConfusionMatrix(h2CatW1, "h2CatW1_confus", "Confusion matrix for varying final states in HPgTPC: W < 1GeV; True category; Reco category");
+  h2CatW1_confus->Write();
+  TH2 *h2CatW2 = predFhcCatW2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2CatW2_confus = makeConfusionMatrix(h2CatW2, "h2CatW2_confus", "Confusion matrix for varying final states in HPgTPC: 1GeV < W < 2GeV; True category; Reco category");
+  h2CatW2_confus->Write();
+  TH2 *h2CatW3 = predFhcCatW3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2CatW3_confus = makeConfusionMatrix(h2CatW3, "h2CatW3_confus", "Confusion matrix for varying final states in HPgTPC: W > 2GeV; True category; Reco category");
+  h2CatW3_confus->Write();
+
+  TH2 *h2CatQ21 = predFhcCatQ21.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2CatQ21_confus = makeConfusionMatrix(h2CatQ21, "h2CatQ21_confus", "Confusion matrix for varying final states in HPgTPC: Q^{2} < 1GeV; True category; Reco category");
+  h2CatQ21_confus->Write();
+  TH2 *h2CatQ22 = predFhcCatQ22.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2CatQ22_confus = makeConfusionMatrix(h2CatQ22, "h2CatQ22_confus", "Confusion matrix for varying final states in HPgTPC: 1GeV < Q^{2} < 2GeV; True category; Reco category");
+  h2CatQ22_confus->Write();
+  TH2 *h2CatQ23 = predFhcCatQ23.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
+  TH2 *h2CatQ23_confus = makeConfusionMatrix(h2CatQ23, "h2CatQ23_confus", "Confusion matrix for varying final states in HPgTPC: Q^{2} > 2GeV; True category; Reco category");
+  h2CatW3_confus->Write();
 
   fout->Close();
 } // migrationMatrices
