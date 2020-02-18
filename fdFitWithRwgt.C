@@ -232,8 +232,8 @@ NuFitPenalizer penalty; // NuFit penalizer
 
 void fdFitWithRwgt(const char* outfile, 
 		   const int firstPoint=0, const int lastPoint=20, const int nPoints=20,
-		   /*const int hie=1, const int oct=1,*/ bool makeFDInterps=false,
-		   const char* stateFileDir="/dune/data/users/sbjones/stateFiles/withNuWroRWT/",
+		   bool makeFDInterps=false,
+		   const char* stateFileDir="/dune/data/users/sbjones/stateFiles/withNuWroRWT/highQ2",
 		   const char* cafs="/dune/data/users/marshalc/CAFs/nuwroRW/")
 {
   gROOT->SetBatch(kTRUE);
@@ -381,13 +381,34 @@ void fdFitWithRwgt(const char* outfile,
   std::cout<<"Loaded nue"<<std::endl;
   fFDfhc_wgt->Close();
   delete fFDfhc_wgt;
+
   std::cout<<"Loading weighted RHC samples"<<std::endl;
   TFile *fFDrhc_wgt = new TFile(Form("%s/state_FD_RHC_wgt.root", stateFileDir), "read");
   assert(fFDrhc_wgt);
   PredictionInterp& predNumuRhcReco_wgt = *ana::LoadFrom<PredictionInterp>(fFDrhc_wgt->GetDirectory("fd_interp_numu_rhc_wgt")).release();
+  std::cout<<"Loaded numu"<<std::endl;
   PredictionInterp& predNueRhcReco_wgt  = *ana::LoadFrom<PredictionInterp>(fFDrhc_wgt->GetDirectory("fd_interp_nue_rhc_wgt")).release();
+  std::cout<<"Loaded nue"<<std::endl;
   fFDrhc_wgt->Close();
   delete fFDrhc_wgt;
+
+  std::cout<<"Loading LAr weighted FHC samples"<<std::endl;
+  TFile *fFDfhc_wgt_lar = new TFile(Form("%s/state_FD_FHC_wgt_lar.root", stateFileDir), "read");
+  assert(fFDfhc_wgt_lar);
+  PredictionInterp& predNumuFhcReco_wgt_lar = *ana::LoadFrom<PredictionInterp>(fFDfhc_wgt_lar->GetDirectory("fd_interp_numu_fhc_wgt")).release();
+  std::cout<<"Loaded numu"<<std::endl; 
+  PredictionInterp& predNueFhcReco_wgt_lar  = *ana::LoadFrom<PredictionInterp>(fFDfhc_wgt_lar->GetDirectory("fd_interp_nue_fhc_wgt")).release();
+  fFDfhc_wgt_lar->Close();
+  delete fFDfhc_wgt_lar;
+
+  std::cout<<"Loading LAr weighted RHC samples"<<std::endl;
+  TFile *fFDrhc_wgt_lar = new TFile(Form("%s/state_FD_RHC_wgt_lar.root", stateFileDir), "read");
+  assert(fFDrhc_wgt_lar);
+  PredictionInterp& predNumuRhcReco_wgt_lar = *ana::LoadFrom<PredictionInterp>(fFDrhc_wgt_lar->GetDirectory("fd_interp_numu_rhc_wgt")).release();
+  std::cout<<"Loaded numu"<<std::endl; 
+  PredictionInterp& predNueRhcReco_wgt_lar  = *ana::LoadFrom<PredictionInterp>(fFDrhc_wgt_lar->GetDirectory("fd_interp_nue_rhc_wgt")).release();
+  fFDrhc_wgt_lar->Close();
+  delete fFDrhc_wgt_lar;
 
   std::cout<<"Loaded all samples"<<std::endl;
 
@@ -445,6 +466,13 @@ void fdFitWithRwgt(const char* outfile,
   trFits->Branch("th23Fit_norwt_noTh13", &th23Fit_norwt_noTh13);
   trFits->Branch("dmsq32Fit_norwt_noTh13", &dmsq32Fit_norwt_noTh13);
   trFits->Branch("chi2_norwt_noTh13", &chi2_norwt_noTh13);
+  double deltaFit_lar, deltaBias_lar, th23Fit_lar, th13Fit_lar, dmsq32Fit_lar, chi2_lar;
+  trFits->Branch("deltaFit_lar", &deltaFit_lar);
+  trFits->Branch("deltaBias_lar", &deltaBias_lar);
+  trFits->Branch("th13Fit_lar", &th13Fit_lar);
+  trFits->Branch("th23Fit_lar", &th23Fit_lar);
+  trFits->Branch("dmsq32Fit_lar", &dmsq32Fit_lar);
+  trFits->Branch("chi2_lar", &chi2_lar);
 
   for (int i=firstPoint; i<=lastPoint; i++) {
     double dCP = ((double)i/(double)nPoints) * 2. * TMath::Pi();
@@ -465,7 +493,11 @@ void fdFitWithRwgt(const char* outfile,
     SingleSampleExperiment expNueFhcReco(&predNueFhcReco_wgt, predNueFhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
     SingleSampleExperiment expNumuRhcReco(&predNumuRhcReco_wgt, predNumuRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
     SingleSampleExperiment expNueRhcReco(&predNueRhcReco_wgt, predNueRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
- 
+    expNumuFhcReco.SetMaskHist(0.5, 8.); 
+    expNumuRhcReco.SetMaskHist(0.5, 8.);
+    expNueFhcReco.SetMaskHist(0.5, 8.); 
+    expNueRhcReco.SetMaskHist(0.5, 8.);
+
     std::cout<<"Built SingleSampleExperiments"<<std::endl;
 
     MultiExperiment multiExp({&expNumuFhcReco, &expNueFhcReco, &expNumuRhcReco, &expNueRhcReco, th13});
@@ -486,6 +518,10 @@ void fdFitWithRwgt(const char* outfile,
     SingleSampleExperiment expNueFhcReco_norwt(&predNueFhcReco, predNueFhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
     SingleSampleExperiment expNumuRhcReco_norwt(&predNumuRhcReco, predNumuRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
     SingleSampleExperiment expNueRhcReco_norwt(&predNueRhcReco, predNueRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));     
+    expNumuFhcReco_norwt.SetMaskHist(0.5, 8.); 
+    expNumuRhcReco_norwt.SetMaskHist(0.5, 8.);
+    expNueFhcReco_norwt.SetMaskHist(0.5, 8.); 
+    expNueRhcReco_norwt.SetMaskHist(0.5, 8.);
 
     osc::IOscCalculatorAdjustable* testOsc_norwt = NuFitOscCalc(1);
     SystShifts testSysts_norwt = kNoShift;
@@ -569,6 +605,27 @@ void fdFitWithRwgt(const char* outfile,
     th13Fit_norwt_noTh13   = out_norwt_noTh13.at(1);
     dmsq32Fit_norwt_noTh13 = out_norwt_noTh13.at(0);
     th23Fit_norwt_noTh13   = out_norwt_noTh13.at(2);
+
+    SingleSampleExperiment expNumuFhcReco_lar(&predNumuFhcReco_wgt_lar, predNumuFhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
+    SingleSampleExperiment expNueFhcReco_lar(&predNueFhcReco_wgt_lar, predNueFhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
+    SingleSampleExperiment expNumuRhcReco_lar(&predNumuRhcReco_wgt_lar, predNumuRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
+    SingleSampleExperiment expNueRhcReco_lar(&predNueRhcReco_wgt_lar, predNueRhcReco.PredictSyst(this_calc, fakedatashift).FakeData(pot_fd));
+    expNumuFhcReco_lar.SetMaskHist(0.5, 8.); 
+    expNumuRhcReco_lar.SetMaskHist(0.5, 8.);
+    expNueFhcReco_lar.SetMaskHist(0.5, 8.); 
+    expNueRhcReco_lar.SetMaskHist(0.5, 8.);
+    MultiExperiment multiExp_lar({&expNumuFhcReco_lar, &expNueFhcReco_lar, &expNumuRhcReco_lar, &expNueRhcReco_lar});
+    SystShifts testSysts_lar = kNoShift;
+    osc::IOscCalculatorAdjustable* testOsc_lar = NuFitOscCalc(1);
+    std::vector<double> out_lar = fitPoint(&multiExp_lar, fitVars, fitsysts_norwt,
+					   testOsc_lar, testSysts_lar, 
+					   oscSeeds, this_calc);
+    chi2_lar      = out_lar.at(out_lar.size()-1);
+    deltaFit_lar  = out_lar.at(3);
+    deltaBias_lar = out_lar.at(out_lar.size()-2);
+    th13Fit_lar   = out_lar.at(1);
+    dmsq32Fit_lar = out_lar.at(0);
+    th23Fit_lar   = out_lar.at(2);
 
     trFits->Fill();
   }
