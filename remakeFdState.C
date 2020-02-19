@@ -75,7 +75,6 @@ void remakeFdState(bool isFhc, bool isWeighted, bool isLar,
   systlist.insert(systlist.end(), fakedata.end()-1, fakedata.end());
   std::vector<const ISyst*> nuwrorwt    = GetXSecSysts({"NuWroRWT"});
   std::vector<const ISyst*> nuwrorwtlar = GetXSecSysts({"NuWroRWTLar"});
-  systlist.insert(systlist.end(), nuwrorwtlar.end()-3, nuwrorwtlar.end()-1);
   std::cout<<"Systs to make state files"<<std::endl;
   for (unsigned int i=0; i<systlist.size(); i++) {
     std::cout<<systlist.at(i)->ShortName()<<std::endl;
