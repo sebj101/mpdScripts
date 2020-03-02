@@ -138,7 +138,7 @@ THStack* makeCatStack(const std::vector<TH1*> hvec, const char* name, const char
 TH1D* ratioWithSpread(const char* name, const char* title, 
 		      const std::vector<TH1*> hNReco, const std::vector<TH1*> hGReco, 
 		      const std::vector<TH1*> hNTrue, const std::vector<TH1*> hGTrue,
-		      const TH2* matrix, const int cat)
+		      const TH2* matrix, const int cat, const double inputPOT, const double truePOT)
 {
   if (cat<1 || cat>nCats) std::cout<<"Category is invalid!!!"<<std::endl;
 
@@ -153,7 +153,7 @@ TH1D* ratioWithSpread(const char* name, const char* title,
   for (int i=1; i<=hNReco.at(cat-1)->GetNbinsX(); i++) {
     double num = hNReco.at(cat-1)->GetBinContent(i);
     double denom = hGReco.at(cat-1)->GetBinContent(i);
-    if (denom * (1.9342e20/1e21) < 100.) continue;
+    if (denom * (truePOT/inputPOT) < 100.) continue;
     // if (denom < 1000.) continue;
     // Get error from the spread in the smearing
     double true_cv = rTvec.at(cat-1)->GetBinContent(i);
@@ -258,7 +258,7 @@ const HistAxis axCategory("True category", binsCategory, kTrueCategory,
 			  "Reco category", binsCategory, kRecoCategory);
 
 const int nBinsKinematics = 20;
-const Binning binsW  = Binning::Simple(20, 0., 3.);
+const Binning binsW  = Binning::Simple(20, 0., 5.);
 const Binning binsQ2 = Binning::Simple(20, 0., 5.);
 const HistAxis axRecoW ("W_{reco} / GeV", binsW, kRecoW);
 const HistAxis axRecoQ2("Q^{2}_{reco} / (GeV)^{2}", binsQ2, kRecoQ2);
@@ -341,7 +341,7 @@ const Cut kPassRecoCat6({},
 			});
 
 void spreadTest(const char *outfile, 
-		const char *garDir="/dune/data/users/sbjones/gasTpcCAF/v8/") 
+		const char *garDir="/dune/data/users/sbjones/gasTpcCAF/v9/") 
 {
   gROOT->SetBatch(kTRUE);
   rootlogon();
@@ -748,12 +748,12 @@ void spreadTest(const char *outfile,
 
   // Make the same plots with the better errors
 
-  TH1D* hrFhcQ2RecoCat1_spread = ratioWithSpread("hrFhcQ2RecoCat1_spread", "0#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 1);
-  TH1D* hrFhcQ2RecoCat2_spread = ratioWithSpread("hrFhcQ2RecoCat2_spread", "1#pi^{-}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 2);
-  TH1D* hrFhcQ2RecoCat3_spread = ratioWithSpread("hrFhcQ2RecoCat3_spread", "1#pi^{+}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 3);
-  TH1D* hrFhcQ2RecoCat4_spread = ratioWithSpread("hrFhcQ2RecoCat4_spread", "1#pi^{0}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 4);
-  TH1D* hrFhcQ2RecoCat5_spread = ratioWithSpread("hrFhcQ2RecoCat5_spread", "2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 5);
-  TH1D* hrFhcQ2RecoCat6_spread = ratioWithSpread("hrFhcQ2RecoCat6_spread", ">2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 6);
+  TH1D* hrFhcQ2RecoCat1_spread = ratioWithSpread("hrFhcQ2RecoCat1_spread", "0#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 1, pot_nd, fhcPOT);
+  TH1D* hrFhcQ2RecoCat2_spread = ratioWithSpread("hrFhcQ2RecoCat2_spread", "1#pi^{-}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 2, pot_nd, fhcPOT);
+  TH1D* hrFhcQ2RecoCat3_spread = ratioWithSpread("hrFhcQ2RecoCat3_spread", "1#pi^{+}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 3, pot_nd, fhcPOT);
+  TH1D* hrFhcQ2RecoCat4_spread = ratioWithSpread("hrFhcQ2RecoCat4_spread", "1#pi^{0}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 4, pot_nd, fhcPOT);
+  TH1D* hrFhcQ2RecoCat5_spread = ratioWithSpread("hrFhcQ2RecoCat5_spread", "2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 5, pot_nd, fhcPOT);
+  TH1D* hrFhcQ2RecoCat6_spread = ratioWithSpread("hrFhcQ2RecoCat6_spread", ">2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", fhcQ2RecoVec_n, fhcQ2RecoVec, fhcQ2Vec_n, fhcQ2Vec, h2Cat, 6, pot_nd, fhcPOT);
   doHistStuff(hrFhcQ2RecoCat1_spread, "hrFhcQ2RecoCat1_spread", "0#pi");
   doHistStuff(hrFhcQ2RecoCat2_spread, "hrFhcQ2RecoCat2_spread", "1#pi^{-}");
   doHistStuff(hrFhcQ2RecoCat3_spread, "hrFhcQ2RecoCat3_spread", "1#pi^{+}");
@@ -770,12 +770,12 @@ void spreadTest(const char *outfile,
   THStack *hsFhcQ2Reco_spread = makeCatStack(fhcQ2RecoVec_spread, "hsFhcQ2Reco_spread", "NuWro/GENIE for various reconstructed final states; Q^{2}_{reco} / GeV; NuWro/GENIE");
   hsFhcQ2Reco_spread->Write();
 
-  TH1D* hrFhcWRecoCat1_spread = ratioWithSpread("hrFhcWRecoCat1_spread", "0#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 1);
-  TH1D* hrFhcWRecoCat2_spread = ratioWithSpread("hrFhcWRecoCat2_spread", "1#pi^{-}; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 2);
-  TH1D* hrFhcWRecoCat3_spread = ratioWithSpread("hrFhcWRecoCat3_spread", "1#pi^{+}; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 3);
-  TH1D* hrFhcWRecoCat4_spread = ratioWithSpread("hrFhcWRecoCat4_spread", "1#pi^{0}; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 4);
-  TH1D* hrFhcWRecoCat5_spread = ratioWithSpread("hrFhcWRecoCat5_spread", "2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 5);
-  TH1D* hrFhcWRecoCat6_spread = ratioWithSpread("hrFhcWRecoCat6_spread", ">2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 6);
+  TH1D* hrFhcWRecoCat1_spread = ratioWithSpread("hrFhcWRecoCat1_spread", "0#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 1, pot_nd, fhcPOT);
+  TH1D* hrFhcWRecoCat2_spread = ratioWithSpread("hrFhcWRecoCat2_spread", "1#pi^{-}; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 2, pot_nd, fhcPOT);
+  TH1D* hrFhcWRecoCat3_spread = ratioWithSpread("hrFhcWRecoCat3_spread", "1#pi^{+}; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 3, pot_nd, fhcPOT);
+  TH1D* hrFhcWRecoCat4_spread = ratioWithSpread("hrFhcWRecoCat4_spread", "1#pi^{0}; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 4, pot_nd, fhcPOT);
+  TH1D* hrFhcWRecoCat5_spread = ratioWithSpread("hrFhcWRecoCat5_spread", "2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 5, pot_nd, fhcPOT);
+  TH1D* hrFhcWRecoCat6_spread = ratioWithSpread("hrFhcWRecoCat6_spread", ">2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", fhcWRecoVec_n, fhcWRecoVec, fhcWVec_n, fhcWVec, h2Cat, 6, pot_nd, fhcPOT);
   doHistStuff(hrFhcWRecoCat1_spread, "hrFhcWRecoCat1_spread", "0#pi");
   doHistStuff(hrFhcWRecoCat2_spread, "hrFhcWRecoCat2_spread", "1#pi^{-}");
   doHistStuff(hrFhcWRecoCat3_spread, "hrFhcWRecoCat3_spread", "1#pi^{+}");
@@ -1051,13 +1051,12 @@ void spreadTest(const char *outfile,
   rhcQ2RecoVec_n.push_back(hRhcQ2RecoCat6_n);
 
   // Make the same plots with the better errors
-
-  TH1D* hrRhcQ2RecoCat1_spread = ratioWithSpread("hrRhcQ2RecoCat1_spread", "0#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 1);
-  TH1D* hrRhcQ2RecoCat2_spread = ratioWithSpread("hrRhcQ2RecoCat2_spread", "1#pi^{-}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 2);
-  TH1D* hrRhcQ2RecoCat3_spread = ratioWithSpread("hrRhcQ2RecoCat3_spread", "1#pi^{+}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 3);
-  TH1D* hrRhcQ2RecoCat4_spread = ratioWithSpread("hrRhcQ2RecoCat4_spread", "1#pi^{0}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 4);
-  TH1D* hrRhcQ2RecoCat5_spread = ratioWithSpread("hrRhcQ2RecoCat5_spread", "2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 5);
-  TH1D* hrRhcQ2RecoCat6_spread = ratioWithSpread("hrRhcQ2RecoCat6_spread", ">2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 6);
+  TH1D* hrRhcQ2RecoCat1_spread = ratioWithSpread("hrRhcQ2RecoCat1_spread", "0#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 1, pot_nd, rhcPOT);
+  TH1D* hrRhcQ2RecoCat2_spread = ratioWithSpread("hrRhcQ2RecoCat2_spread", "1#pi^{-}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 2, pot_nd, rhcPOT);
+  TH1D* hrRhcQ2RecoCat3_spread = ratioWithSpread("hrRhcQ2RecoCat3_spread", "1#pi^{+}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 3, pot_nd, rhcPOT);
+  TH1D* hrRhcQ2RecoCat4_spread = ratioWithSpread("hrRhcQ2RecoCat4_spread", "1#pi^{0}; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 4, pot_nd, rhcPOT);
+  TH1D* hrRhcQ2RecoCat5_spread = ratioWithSpread("hrRhcQ2RecoCat5_spread", "2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 5, pot_nd, rhcPOT);
+  TH1D* hrRhcQ2RecoCat6_spread = ratioWithSpread("hrRhcQ2RecoCat6_spread", ">2#pi; Q^{2}_{reco} / (GeV)^{2}; NuWro/GENIE", rhcQ2RecoVec_n, rhcQ2RecoVec, rhcQ2Vec_n, rhcQ2Vec, h2Cat, 6, pot_nd, rhcPOT);
   doHistStuff(hrRhcQ2RecoCat1_spread, "hrRhcQ2RecoCat1_spread", "0#pi");
   doHistStuff(hrRhcQ2RecoCat2_spread, "hrRhcQ2RecoCat2_spread", "1#pi^{-}");
   doHistStuff(hrRhcQ2RecoCat3_spread, "hrRhcQ2RecoCat3_spread", "1#pi^{+}");
@@ -1074,12 +1073,12 @@ void spreadTest(const char *outfile,
   THStack *hsRhcQ2Reco_spread = makeCatStack(rhcQ2RecoVec_spread, "hsRhcQ2Reco_spread", "NuWro/GENIE for various reconstructed final states; Q^{2}_{reco} / GeV; NuWro/GENIE");
   hsRhcQ2Reco_spread->Write();
 
-  TH1D* hrRhcWRecoCat1_spread = ratioWithSpread("hrRhcWRecoCat1_spread", "0#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 1);
-  TH1D* hrRhcWRecoCat2_spread = ratioWithSpread("hrRhcWRecoCat2_spread", "1#pi^{-}; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 2);
-  TH1D* hrRhcWRecoCat3_spread = ratioWithSpread("hrRhcWRecoCat3_spread", "1#pi^{+}; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 3);
-  TH1D* hrRhcWRecoCat4_spread = ratioWithSpread("hrRhcWRecoCat4_spread", "1#pi^{0}; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 4);
-  TH1D* hrRhcWRecoCat5_spread = ratioWithSpread("hrRhcWRecoCat5_spread", "2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 5);
-  TH1D* hrRhcWRecoCat6_spread = ratioWithSpread("hrRhcWRecoCat6_spread", ">2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 6);
+  TH1D* hrRhcWRecoCat1_spread = ratioWithSpread("hrRhcWRecoCat1_spread", "0#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 1, pot_nd, rhcPOT);
+  TH1D* hrRhcWRecoCat2_spread = ratioWithSpread("hrRhcWRecoCat2_spread", "1#pi^{-}; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 2, pot_nd, rhcPOT);
+  TH1D* hrRhcWRecoCat3_spread = ratioWithSpread("hrRhcWRecoCat3_spread", "1#pi^{+}; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 3, pot_nd, rhcPOT);
+  TH1D* hrRhcWRecoCat4_spread = ratioWithSpread("hrRhcWRecoCat4_spread", "1#pi^{0}; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 4, pot_nd, rhcPOT);
+  TH1D* hrRhcWRecoCat5_spread = ratioWithSpread("hrRhcWRecoCat5_spread", "2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 5, pot_nd, rhcPOT);
+  TH1D* hrRhcWRecoCat6_spread = ratioWithSpread("hrRhcWRecoCat6_spread", ">2#pi; W_{reco} / (GeV)^{2}; NuWro/GENIE", rhcWRecoVec_n, rhcWRecoVec, rhcWVec_n, rhcWVec, h2Cat, 6, pot_nd, rhcPOT);
   doHistStuff(hrRhcWRecoCat1_spread, "hrRhcWRecoCat1_spread", "0#pi");
   doHistStuff(hrRhcWRecoCat2_spread, "hrRhcWRecoCat2_spread", "1#pi^{-}");
   doHistStuff(hrRhcWRecoCat3_spread, "hrRhcWRecoCat3_spread", "1#pi^{+}");
