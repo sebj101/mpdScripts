@@ -1095,7 +1095,7 @@ void spreadTest(const char *outfile,
   THStack *hsRhcWReco_spread = makeCatStack(rhcWRecoVec_spread, "hsRhcWReco_spread", "NuWro/GENIE for various reconstructed final states; W_{reco} / GeV; NuWro/GENIE");
   hsRhcWReco_spread->Write();
 
-  TLine *l = new TLine(0., 1., 3., 1.);
+  TLine *l = new TLine(0., 1., 5., 1.);
   l->SetLineStyle(2);
   l->SetLineWidth(2);
   l->Write("l");
