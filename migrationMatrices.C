@@ -72,6 +72,7 @@ void makeConfusionMatrix(TH2* h2)
       h2->SetBinContent(binX, binY, h2->GetBinContent(binX, binY) / colInt);
     }
   }
+  h2->GetZaxis()->SetRangeUser(0., 1.);
 }
 
 TH2* makeConfusionMatrix(TH2* hin, const char* name, const char* title)
@@ -87,6 +88,7 @@ TH2* makeConfusionMatrix(TH2* hin, const char* name, const char* title)
       h2->SetBinContent(binX, binY, h2->GetBinContent(binX, binY) / colInt);
     }
   }
+  h2->GetZaxis()->SetRangeUser(0., 1.);
   return h2;
 }
 
@@ -180,7 +182,7 @@ const HistAxis axCategory("True category", binsCategory, kTrueCategory,
 			  "Reco category", binsCategory, kRecoCategory);
 
 void migrationMatrices(const char *outfile, 
-		       const char *garDir="/dune/data/users/sbjones/gasTpcCAF/v8/") 
+		       const char *garDir="/dune/data/users/sbjones/gasTpcCAF/v9/") 
 {
   gROOT->SetBatch(kTRUE);
   rootlogon();
@@ -219,17 +221,17 @@ void migrationMatrices(const char *outfile,
   // Categories for various bins of Q2 and W
   // W
   NoOscPredictionGenerator genFhcCatW1(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoW<1.); 
+  NoOscPredictionGenerator genFhcCatW2(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoW>1. && kRecoW<3.); 
+  NoOscPredictionGenerator genFhcCatW3(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoW>3.); 
   PredictionInterp predFhcCatW1(systlist, 0, genFhcCatW1, loadersGArFHC);
-  NoOscPredictionGenerator genFhcCatW2(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoW>1. && kRecoW<2.); 
   PredictionInterp predFhcCatW2(systlist, 0, genFhcCatW2, loadersGArFHC);
-  NoOscPredictionGenerator genFhcCatW3(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoW>2.); 
   PredictionInterp predFhcCatW3(systlist, 0, genFhcCatW3, loadersGArFHC);
-
-  NoOscPredictionGenerator genFhcCatQ21(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoQ2<1.); // Q2
+  // Q2
+  NoOscPredictionGenerator genFhcCatQ21(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoQ2<1.);
+  NoOscPredictionGenerator genFhcCatQ22(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoQ2>1. && kRecoQ2<3.); 
+  NoOscPredictionGenerator genFhcCatQ23(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoQ2>3.);
   PredictionInterp predFhcCatQ21(systlist, 0, genFhcCatQ21, loadersGArFHC);
-  NoOscPredictionGenerator genFhcCatQ22(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoQ2>1. && kRecoQ2<2.); 
   PredictionInterp predFhcCatQ22(systlist, 0, genFhcCatQ22, loadersGArFHC);
-  NoOscPredictionGenerator genFhcCatQ23(axCategory, kPassND_FHC_NUMU && kIsTrueGasFV && kRecoQ2>2.); 
   PredictionInterp predFhcCatQ23(systlist, 0, genFhcCatQ23, loadersGArFHC);
 
   loadersGArFHC.Go();
@@ -381,21 +383,21 @@ void migrationMatrices(const char *outfile,
   TH2 *h2CatW1_confus = makeConfusionMatrix(h2CatW1, "h2CatW1_confus", "Confusion matrix for varying final states in HPgTPC: W < 1GeV; True category; Reco category");
   h2CatW1_confus->Write();
   TH2 *h2CatW2 = predFhcCatW2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
-  TH2 *h2CatW2_confus = makeConfusionMatrix(h2CatW2, "h2CatW2_confus", "Confusion matrix for varying final states in HPgTPC: 1GeV < W < 2GeV; True category; Reco category");
+  TH2 *h2CatW2_confus = makeConfusionMatrix(h2CatW2, "h2CatW2_confus", "Confusion matrix for varying final states in HPgTPC: 1GeV < W < 3GeV; True category; Reco category");
   h2CatW2_confus->Write();
   TH2 *h2CatW3 = predFhcCatW3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
-  TH2 *h2CatW3_confus = makeConfusionMatrix(h2CatW3, "h2CatW3_confus", "Confusion matrix for varying final states in HPgTPC: W > 2GeV; True category; Reco category");
+  TH2 *h2CatW3_confus = makeConfusionMatrix(h2CatW3, "h2CatW3_confus", "Confusion matrix for varying final states in HPgTPC: W > 3GeV; True category; Reco category");
   h2CatW3_confus->Write();
 
   TH2 *h2CatQ21 = predFhcCatQ21.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
   TH2 *h2CatQ21_confus = makeConfusionMatrix(h2CatQ21, "h2CatQ21_confus", "Confusion matrix for varying final states in HPgTPC: Q^{2} < 1GeV; True category; Reco category");
   h2CatQ21_confus->Write();
   TH2 *h2CatQ22 = predFhcCatQ22.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
-  TH2 *h2CatQ22_confus = makeConfusionMatrix(h2CatQ22, "h2CatQ22_confus", "Confusion matrix for varying final states in HPgTPC: 1GeV < Q^{2} < 2GeV; True category; Reco category");
+  TH2 *h2CatQ22_confus = makeConfusionMatrix(h2CatQ22, "h2CatQ22_confus", "Confusion matrix for varying final states in HPgTPC: 1GeV < Q^{2} < 3GeV; True category; Reco category");
   h2CatQ22_confus->Write();
   TH2 *h2CatQ23 = predFhcCatQ23.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
-  TH2 *h2CatQ23_confus = makeConfusionMatrix(h2CatQ23, "h2CatQ23_confus", "Confusion matrix for varying final states in HPgTPC: Q^{2} > 2GeV; True category; Reco category");
-  h2CatW3_confus->Write();
+  TH2 *h2CatQ23_confus = makeConfusionMatrix(h2CatQ23, "h2CatQ23_confus", "Confusion matrix for varying final states in HPgTPC: Q^{2} > 3GeV; True category; Reco category");
+  h2CatQ23_confus->Write();
 
   fout->Close();
 } // migrationMatrices
