@@ -11,6 +11,7 @@
 #include "CAFAna/Core/LoadFromFile.h"
 #include "CAFAna/Core/Loaders.h"
 #include "CAFAna/Core/Progress.h"
+#include "CAFAna/Core/Ratio.h"
 #include "CAFAna/Cuts/TruthCuts.h"
 #include "CAFAna/Cuts/AnaCuts.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
@@ -138,22 +139,58 @@ THStack *makeDataMCComp(const char* name, const char* title,
 
 THStack *makeDataQ0Q3Comp(const char* name, const char* title, 		    
 			  PredictionInterp* mcpred_wgt,
+			  PredictionInterp* mcpred_q2_wgt,
 			  PredictionInterp *datapred, const SystShifts datasyst, 
 			  osc::IOscCalculatorAdjustable* osc, const double pot)
 {
   THStack *hs = new THStack(name, title);
   TH1 *hmc_wgt     = mcpred_wgt->Predict(osc).FakeData(pot).ToTH1(pot, kRed, kSolid, kPOT, kBinDensity);
-  TH1 *hdata       = datapred->PredictSyst(osc, datasyst).FakeData(pot).ToTH1(pot, kBlack, kSolid, kPOT, kBinDensity);
-  TH1 *hmc_no_wgt  = datapred->Predict(osc).FakeData(pot).ToTH1(pot, kBlue, kDashed, kPOT, kBinDensity);
+  TH1 *hmc_q2_wgt  = mcpred_q2_wgt->Predict(osc).FakeData(pot).ToTH1(pot, kOrange+1, kSolid, kPOT, kBinDensity);
+  TH1 *hdata       = datapred->PredictSyst(osc, datasyst).FakeData(pot).ToTH1(pot, kBlack, kDashed, kPOT, kBinDensity);
+  TH1 *hmc_no_wgt  = datapred->Predict(osc).FakeData(pot).ToTH1(pot, kBlue, kSolid, kPOT, kBinDensity);
   setHistAttr(hmc_wgt);
+  setHistAttr(hmc_q2_wgt);
   setHistAttr(hmc_no_wgt);
   setHistAttr(hdata);
   hmc_wgt->SetTitle("q_{0}, q_{3} weight");
+  hmc_q2_wgt->SetTitle("Q^{2} weight");
   hdata->SetTitle("Data");
   hmc_no_wgt->SetTitle("Unweighted");
+  hmc_wgt->SetName(Form("%s_q0q3", name));
+  hmc_no_wgt->SetName(Form("%s_unwgt", name));
+  hdata->SetName(Form("%s_data", name));
+  hmc_wgt->Write();
+  hmc_no_wgt->Write();
+  hdata->Write();
   hs->Add(hmc_wgt);
+  // hs->Add(hmc_q2_wgt);
   hs->Add(hmc_no_wgt);
   hs->Add(hdata);
+  return hs;
+}
+
+THStack *makeDataMCRatios(const char* name, const char* title, 		    
+			  PredictionInterp* mcpred_q2_wgt,
+			  PredictionInterp* datapred, const SystShifts datasyst, 
+			  osc::IOscCalculatorAdjustable* osc, const double pot)
+{
+  THStack *hs = new THStack(name, title);
+  Ratio wgtData(mcpred_q2_wgt->Predict(osc).FakeData(pot), datapred->PredictSyst(osc, datasyst).FakeData(pot));
+  Ratio nowgtData(datapred->Predict(osc).FakeData(pot), datapred->PredictSyst(osc, datasyst).FakeData(pot));
+  TH1 *hwgtData   = wgtData.ToTH1();
+  TH1 *hnowgtData = nowgtData.ToTH1();
+  setHistAttr(hwgtData);
+  setHistAttr(hnowgtData);
+  hwgtData->SetLineColor(kRed);
+  hnowgtData->SetLineColor(kBlue);
+  hwgtData->SetTitle("Weighted MC");
+  hnowgtData->SetTitle("Unweighted MC");
+  hwgtData->SetName(Form("%s_wgt_data_ratio", name));
+  hnowgtData->SetName(Form("%s_nowgt_data_ratio", name));
+  hwgtData->Write();
+  hnowgtData->Write();
+  hs->Add(hwgtData);
+  hs->Add(hnowgtData);
   return hs;
 }
 
@@ -259,33 +296,44 @@ void fdDataComp(const char* outfile)
 				     &predNueRhcReco_wgt, &predNueRhcReco_wgt_lar, &predNueRhcReco, 
 				     fakedatashift, this_calc, pot_fd);
 
-  THStack *hsnumufhc_q0q3 = makeDataQ0Q3Comp("hsnumufhc_q0q3", "#nu_{#mu} FHC; E_{#nu, reco} / GeV; Events / GeV", &predNumuFhcReco_wgt_q0q3, &predNumuFhcReco, fakedatashift, this_calc, pot_fd);
-  THStack *hsnumurhc_q0q3 = makeDataQ0Q3Comp("hsnumurhc_q0q3", "#nu_{#mu} RHC; E_{#nu, reco} / GeV; Events / GeV", &predNumuRhcReco_wgt_q0q3, &predNumuRhcReco, fakedatashift, this_calc, pot_fd);
-  THStack *hsnuefhc_q0q3 = makeDataQ0Q3Comp("hsnuefhc_q0q3", "#nu_{e} FHC; E_{#nu, reco} / GeV; Events / GeV", &predNueFhcReco_wgt_q0q3, &predNueFhcReco, fakedatashift, this_calc, pot_fd);
-  THStack *hsnuerhc_q0q3 = makeDataQ0Q3Comp("hsnuerhc_q0q3", "#nu_{e} RHC; E_{#nu, reco} / GeV; Events / GeV", &predNueRhcReco_wgt_q0q3, &predNueRhcReco, fakedatashift, this_calc, pot_fd);
-
   hsnumufhc->Write();
   hsnumurhc->Write();
   hsnuefhc->Write();
   hsnuerhc->Write();
 
-  hsnumufhc_q0q3->Write();
-  hsnumurhc_q0q3->Write();
-  hsnuefhc_q0q3->Write();
-  hsnuerhc_q0q3->Write();
 
-  for (int i=0; i<12; i++) {
-    double dcp=(double)i/12. * 2. * TMath::Pi();
+  for (int i=0; i<45; i++) {
+    double dcp=(double)i/45. * 2. * TMath::Pi();
     this_calc->SetdCP(dcp);
     THStack *hsnumufhc_wgt = makeDataMCComp(Form("hsnumufhc_wgt_%d", i), "#nu_{#mu} FHC; E_{#nu, reco} / GeV; Events / GeV", &predNumuFhcReco_wgt, &predNumuFhcReco, fakedatashift, this_calc, pot_fd);
     THStack *hsnumurhc_wgt = makeDataMCComp(Form("hsnumurhc_wgt_%d", i), "#nu_{#mu} RHC; E_{#nu, reco} / GeV; Events / GeV", &predNumuRhcReco_wgt, &predNumuRhcReco, fakedatashift, this_calc, pot_fd);
     THStack *hsnuefhc_wgt = makeDataMCComp(Form("hsnuefhc_wgt_%d", i), "#nu_{e} FHC; E_{#nu, reco} / GeV; Events / GeV", &predNueFhcReco_wgt, &predNueFhcReco, fakedatashift, this_calc, pot_fd);
     THStack *hsnuerhc_wgt = makeDataMCComp(Form("hsnuerhc_wgt_%d", i), "#nu_{e} RHC; E_{#nu, reco} / GeV; Events / GeV", &predNueRhcReco_wgt, &predNueRhcReco, fakedatashift, this_calc, pot_fd);
 
+    THStack *hsnumufhc_q0q3 = makeDataQ0Q3Comp(Form("hsnumufhc_q0q3_%d", i), Form("#nu_{#mu} FHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNumuFhcReco_wgt_q0q3, &predNumuFhcReco_wgt, &predNumuFhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hsnumurhc_q0q3 = makeDataQ0Q3Comp(Form("hsnumurhc_q0q3_%d", i), Form("#nu_{#mu} RHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNumuRhcReco_wgt_q0q3, &predNumuRhcReco_wgt, &predNumuRhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hsnuefhc_q0q3  = makeDataQ0Q3Comp(Form("hsnuefhc_q0q3_%d", i), Form("#nu_{e} FHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNueFhcReco_wgt_q0q3, &predNueFhcReco_wgt, &predNueFhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hsnuerhc_q0q3  = makeDataQ0Q3Comp(Form("hsnuerhc_q0q3_%d", i), Form("#nu_{e} RHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNueRhcReco_wgt_q0q3, &predNueRhcReco_wgt, &predNueRhcReco, fakedatashift, this_calc, pot_fd);
+
+    THStack *hrnumufhc = makeDataMCRatios(Form("hrnumufhc_%d", i), Form("#nu_{#mu} FHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNumuFhcReco_wgt_q0q3, &predNumuFhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hrnumurhc = makeDataMCRatios(Form("hrnumurhc_%d", i), Form("#nu_{#mu} RHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNumuRhcReco_wgt_q0q3, &predNumuRhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hrnuefhc  = makeDataMCRatios(Form("hrnuefhc_%d", i), Form("#nu_{e} FHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNueFhcReco_wgt_q0q3, &predNueFhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hrnuerhc  = makeDataMCRatios(Form("hrnuerhc_%d", i), Form("#nu_{e} RHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNueRhcReco_wgt_q0q3, &predNueRhcReco, fakedatashift, this_calc, pot_fd);
+
     hsnumufhc_wgt->Write();
     hsnumurhc_wgt->Write();
     hsnuefhc_wgt->Write();
     hsnuerhc_wgt->Write();
+
+    hsnumufhc_q0q3->Write();
+    hsnumurhc_q0q3->Write();
+    hsnuefhc_q0q3->Write();
+    hsnuerhc_q0q3->Write();
+
+    hrnumufhc->Write();
+    hrnumurhc->Write();
+    hrnuefhc->Write();
+    hrnuerhc->Write();
   }
 
   fout->Close();
