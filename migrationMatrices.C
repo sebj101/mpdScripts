@@ -54,10 +54,11 @@ std::string catName(const int cat)
 {
   std::string name;
   if (cat==1) name="0#pi";
-  else if (cat==2) name="1#pi^{#pm}";
-  else if (cat==3) name="1#pi^{0}";
-  else if (cat==4) name="2#pi";
-  else if (cat==5) name=">2#pi";
+  else if (cat==2) name="1#pi^{-}";
+  else if (cat==3) name="1#pi^{+}";
+  else if (cat==4) name="1#pi^{0}";
+  else if (cat==5) name="2#pi";
+  else if (cat==6) name=">2#pi";
   return name;
 }
 
@@ -126,10 +127,11 @@ const Var kRecoCategory({"dune.gastpc_pi_pl_mult", "dune.gastpc_pi_min_mult", "d
 			  int nChargedPi = sr->dune.gastpc_pi_pl_mult + sr->dune.gastpc_pi_min_mult;
 			  int nPi = sr->dune.gastpc_pi_pl_mult + sr->dune.gastpc_pi_min_mult + sr->dune.gastpc_pi_0_mult;
 			  if (nPi==0) cat=1;
-			  else if (nChargedPi==1 && nPi==1) cat=2;
-			  else if (sr->dune.gastpc_pi_0_mult==1 && nPi==1) cat=3;
-			  else if (nPi==2) cat=4;
-			  else cat=5;
+			  else if (sr->dune.gastpc_pi_min_mult==1 && nPi==1) cat=2;
+			  else if (sr->dune.gastpc_pi_pl_mult==1 && nPi==1) cat=3;
+			  else if (sr->dune.gastpc_pi_0_mult==1 && nPi==1) cat=4;
+			  else if (nPi==2) cat=5;
+			  else if (nPi>2) cat=6;
 			  return cat;
 			});
 
@@ -139,10 +141,11 @@ const Var kTrueCategory({"dune.nipip", "dune.nipim", "dune.nipi0"},
 			  int nChargedPi = sr->dune.nipip + sr->dune.nipim;
 			  int nPi = sr->dune.nipip + sr->dune.nipim + sr->dune.nipi0;
 			  if (nPi==0) cat=1;
-			  else if (nChargedPi==1 && nPi==1) cat=2;
-			  else if (sr->dune.nipi0==1 && nPi==1) cat=3;
-			  else if (nPi==2) cat=4;
-			  else cat=5;
+			  else if (sr->dune.nipim==1 && nPi==1) cat=2;
+			  else if (sr->dune.nipip==1 && nPi==1) cat=3;
+			  else if (sr->dune.nipi0==1 && nPi==1) cat=4;
+			  else if (nPi==2) cat=5;
+			  else if (nPi>2) cat=6;
 			  return cat;
 			});
 // Reco Q2
@@ -177,7 +180,7 @@ const HistAxis axTrueRecoPi("N_{#pi, true}", binsParticle, kPi,
 const HistAxis axTrueRecoP ("N_{P, true}", binsParticle, kP,
 			    "N_{P, reco}", binsParticle, kRecoP);
 
-const Binning binsCategory = Binning::Simple(5, 0.5, 5.5);
+const Binning binsCategory = Binning::Simple(6, 0.5, 6.5);
 const HistAxis axCategory("True category", binsCategory, kTrueCategory, 
 			  "Reco category", binsCategory, kRecoCategory);
 
