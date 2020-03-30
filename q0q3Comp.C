@@ -121,8 +121,8 @@ TH2* ratioSuppressLowStats(PredictionInterp *pred, const char* namestub, const c
 {
   TH2 *hgenie = pred->PredictSyst(0, kNoShift).FakeData(inputPOT).ToTH2(inputPOT);
   TH2 *hnuwro = pred->PredictSyst(0, shift).FakeData(inputPOT).ToTH2(inputPOT);
-  hgenie->SetTitle(Form("%s GENIE; q_{3, reco} / GeV; q_{0, reco} / (GeV/c); Events / (GeV)^{2}c^{-1}", title));
-  hnuwro->SetTitle(Form("%s NuWro; q_{3, reco} / GeV; q_{0, reco} / (GeV/c); Events / (GeV)^{2}c^{-1}", title));
+  hgenie->SetTitle(Form("%s GENIE; q_{3, reco} / GeV; q_{0, reco} / GeV; Events / (GeV)^{2}", title));
+  hnuwro->SetTitle(Form("%s NuWro; q_{3, reco} / GeV; q_{0, reco} / GeV; Events / (GeV)^{2}", title));
   setHistAttr(hgenie);
   setHistAttr(hnuwro);
   hgenie->Scale(1, "width");
@@ -445,14 +445,14 @@ void q0q3Comp(const char* outfile,
   NoOscPredictionGenerator genq0q3RecoFhcCat7(axq0q3Reco, kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat7);
   NoOscPredictionGenerator genq0q3RecoFhcCat8(axq0q3Reco, kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat8);
 
-  NoOscPredictionGenerator genq0q3FhcCat1(axq0q3, kIsTrueGasFV && kPassCat1);
-  NoOscPredictionGenerator genq0q3FhcCat2(axq0q3, kIsTrueGasFV && kPassCat2);
-  NoOscPredictionGenerator genq0q3FhcCat3(axq0q3, kIsTrueGasFV && kPassCat3);
-  NoOscPredictionGenerator genq0q3FhcCat4(axq0q3, kIsTrueGasFV && kPassCat4);
-  NoOscPredictionGenerator genq0q3FhcCat5(axq0q3, kIsTrueGasFV && kPassCat5);
-  NoOscPredictionGenerator genq0q3FhcCat6(axq0q3, kIsTrueGasFV && kPassCat6);
-  NoOscPredictionGenerator genq0q3FhcCat7(axq0q3, kIsTrueGasFV && kPassCat7);
-  NoOscPredictionGenerator genq0q3FhcCat8(axq0q3, kIsTrueGasFV && kPassCat8);
+  NoOscPredictionGenerator genq0q3FhcCat1(axq0q3,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
+  NoOscPredictionGenerator genq0q3FhcCat2(axq0q3,kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat2);
+  NoOscPredictionGenerator genq0q3FhcCat3(axq0q3,kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat3);
+  NoOscPredictionGenerator genq0q3FhcCat4(axq0q3,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat4);
+  NoOscPredictionGenerator genq0q3FhcCat5(axq0q3,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat5);
+  NoOscPredictionGenerator genq0q3FhcCat6(axq0q3,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat6);
+  NoOscPredictionGenerator genq0q3FhcCat7(axq0q3,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat7);
+  NoOscPredictionGenerator genq0q3FhcCat8(axq0q3,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat8);
 
   NoOscPredictionGenerator genq0q3RecoRhcCat1(axq0q3Reco, kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
   NoOscPredictionGenerator genq0q3RecoRhcCat2(axq0q3Reco, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat2);
@@ -463,14 +463,14 @@ void q0q3Comp(const char* outfile,
   NoOscPredictionGenerator genq0q3RecoRhcCat7(axq0q3Reco, kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat7);
   NoOscPredictionGenerator genq0q3RecoRhcCat8(axq0q3Reco, kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat8);
 
-  NoOscPredictionGenerator genq0q3RhcCat1(axq0q3, kIsTrueGasFV && kPassCat1);
-  NoOscPredictionGenerator genq0q3RhcCat2(axq0q3, kIsTrueGasFV && kPassCat2);
-  NoOscPredictionGenerator genq0q3RhcCat3(axq0q3, kIsTrueGasFV && kPassCat3);
-  NoOscPredictionGenerator genq0q3RhcCat4(axq0q3, kIsTrueGasFV && kPassCat4);
-  NoOscPredictionGenerator genq0q3RhcCat5(axq0q3, kIsTrueGasFV && kPassCat5);
-  NoOscPredictionGenerator genq0q3RhcCat6(axq0q3, kIsTrueGasFV && kPassCat6);
-  NoOscPredictionGenerator genq0q3RhcCat7(axq0q3, kIsTrueGasFV && kPassCat7);
-  NoOscPredictionGenerator genq0q3RhcCat8(axq0q3, kIsTrueGasFV && kPassCat8);
+  NoOscPredictionGenerator genq0q3RhcCat1(axq0q3,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
+  NoOscPredictionGenerator genq0q3RhcCat2(axq0q3, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat2);
+  NoOscPredictionGenerator genq0q3RhcCat3(axq0q3, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat3);
+  NoOscPredictionGenerator genq0q3RhcCat4(axq0q3,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat4);
+  NoOscPredictionGenerator genq0q3RhcCat5(axq0q3,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat5);
+  NoOscPredictionGenerator genq0q3RhcCat6(axq0q3,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat6);
+  NoOscPredictionGenerator genq0q3RhcCat7(axq0q3,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat7);
+  NoOscPredictionGenerator genq0q3RhcCat8(axq0q3,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat8);
 
   PredictionInterp predq0q3RecoFhcCat1(onesyst, 0, genq0q3RecoFhcCat1, loadersFHC);
   PredictionInterp predq0q3RecoFhcCat2(onesyst, 0, genq0q3RecoFhcCat2, loadersFHC);
@@ -592,23 +592,25 @@ void q0q3Comp(const char* outfile,
   TH2 *hq0q3RecoRhcCat7 = ratioSuppressLowStats(&predq0q3RecoRhcCat7, "hq0q3RecoRhcCat7", Form("RHC, reco %s", catName(7).c_str()) , pot_nd, rhcPOT, fakedata);
   TH2 *hq0q3RecoRhcCat8 = ratioSuppressLowStats(&predq0q3RecoRhcCat8, "hq0q3RecoRhcCat8", Form("RHC, reco %s", catName(8).c_str()) , pot_nd, rhcPOT, fakedata);
 
-  TH2 *hq0q3FhcCat1 = ratioSuppressLowStats(&predq0q3FhcCat1, "hq0q3FhcCat1", Form("FHC, true %s", catName(1).c_str()), pot_nd, fhcPOT, fakedata);
-  TH2 *hq0q3FhcCat2 = ratioSuppressLowStats(&predq0q3FhcCat2, "hq0q3FhcCat2", Form("FHC, true %s", catName(2).c_str()), pot_nd, fhcPOT, fakedata);
-  TH2 *hq0q3FhcCat3 = ratioSuppressLowStats(&predq0q3FhcCat3, "hq0q3FhcCat3", Form("FHC, true %s", catName(3).c_str()), pot_nd, fhcPOT, fakedata);
-  TH2 *hq0q3FhcCat4 = ratioSuppressLowStats(&predq0q3FhcCat4, "hq0q3FhcCat4", Form("FHC, true %s", catName(4).c_str()), pot_nd, fhcPOT, fakedata);
-  TH2 *hq0q3FhcCat5 = ratioSuppressLowStats(&predq0q3FhcCat5, "hq0q3FhcCat5", Form("FHC, true %s", catName(5).c_str()), pot_nd, fhcPOT, fakedata);
-  TH2 *hq0q3FhcCat6 = ratioSuppressLowStats(&predq0q3FhcCat6, "hq0q3FhcCat6", Form("FHC, true %s", catName(6).c_str()), pot_nd, fhcPOT, fakedata);
-  TH2 *hq0q3FhcCat7 = ratioSuppressLowStats(&predq0q3FhcCat7, "hq0q3FhcCat7", Form("FHC, true %s", catName(7).c_str()), pot_nd, fhcPOT, fakedata);
-  TH2 *hq0q3FhcCat8 = ratioSuppressLowStats(&predq0q3FhcCat8, "hq0q3FhcCat8", Form("FHC, true %s", catName(8).c_str()), pot_nd, fhcPOT, fakedata);
+  TH2 *hq0q3Fhc     = ratioSuppressLowStats(&predq0q3Fhc, "hq0q3Fhc", "FHC, reco CC inc.; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", pot_nd, fhcPOT, fakedata);
+  TH2 *hq0q3FhcCat1 = ratioSuppressLowStats(&predq0q3FhcCat1, "hq0q3FhcCat1", Form("FHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(1).c_str()), pot_nd, fhcPOT, fakedata);
+  TH2 *hq0q3FhcCat2 = ratioSuppressLowStats(&predq0q3FhcCat2, "hq0q3FhcCat2", Form("FHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(2).c_str()), pot_nd, fhcPOT, fakedata);
+  TH2 *hq0q3FhcCat3 = ratioSuppressLowStats(&predq0q3FhcCat3, "hq0q3FhcCat3", Form("FHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(3).c_str()), pot_nd, fhcPOT, fakedata);
+  TH2 *hq0q3FhcCat4 = ratioSuppressLowStats(&predq0q3FhcCat4, "hq0q3FhcCat4", Form("FHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(4).c_str()), pot_nd, fhcPOT, fakedata);
+  TH2 *hq0q3FhcCat5 = ratioSuppressLowStats(&predq0q3FhcCat5, "hq0q3FhcCat5", Form("FHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(5).c_str()), pot_nd, fhcPOT, fakedata);
+  TH2 *hq0q3FhcCat6 = ratioSuppressLowStats(&predq0q3FhcCat6, "hq0q3FhcCat6", Form("FHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(6).c_str()), pot_nd, fhcPOT, fakedata);
+  TH2 *hq0q3FhcCat7 = ratioSuppressLowStats(&predq0q3FhcCat7, "hq0q3FhcCat7", Form("FHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(7).c_str()), pot_nd, fhcPOT, fakedata);
+  TH2 *hq0q3FhcCat8 = ratioSuppressLowStats(&predq0q3FhcCat8, "hq0q3FhcCat8", Form("FHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(8).c_str()), pot_nd, fhcPOT, fakedata);
 
-  TH2 *hq0q3RhcCat1 = ratioSuppressLowStats(&predq0q3RhcCat1, "hq0q3RhcCat1", Form("RHC, true %s", catName(1).c_str()) , pot_nd, rhcPOT, fakedata);
-  TH2 *hq0q3RhcCat2 = ratioSuppressLowStats(&predq0q3RhcCat2, "hq0q3RhcCat2", Form("RHC, true %s", catName(2).c_str()) , pot_nd, rhcPOT, fakedata);
-  TH2 *hq0q3RhcCat3 = ratioSuppressLowStats(&predq0q3RhcCat3, "hq0q3RhcCat3", Form("RHC, true %s", catName(3).c_str()) , pot_nd, rhcPOT, fakedata);
-  TH2 *hq0q3RhcCat4 = ratioSuppressLowStats(&predq0q3RhcCat4, "hq0q3RhcCat4", Form("RHC, true %s", catName(4).c_str()) , pot_nd, rhcPOT, fakedata);
-  TH2 *hq0q3RhcCat5 = ratioSuppressLowStats(&predq0q3RhcCat5, "hq0q3RhcCat5", Form("RHC, true %s", catName(5).c_str()) , pot_nd, rhcPOT, fakedata);
-  TH2 *hq0q3RhcCat6 = ratioSuppressLowStats(&predq0q3RhcCat6, "hq0q3RhcCat6", Form("RHC, true %s", catName(6).c_str()) , pot_nd, rhcPOT, fakedata);
-  TH2 *hq0q3RhcCat7 = ratioSuppressLowStats(&predq0q3RhcCat7, "hq0q3RhcCat7", Form("RHC, true %s", catName(7).c_str()) , pot_nd, rhcPOT, fakedata);
-  TH2 *hq0q3RhcCat8 = ratioSuppressLowStats(&predq0q3RhcCat8, "hq0q3RhcCat8", Form("RHC, true %s", catName(8).c_str()) , pot_nd, rhcPOT, fakedata);
+  TH2 *hq0q3Rhc = ratioSuppressLowStats(&predq0q3Rhc, "hq0q3Rhc", "RHC, reco CC inc.; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", pot_nd, rhcPOT, fakedata);
+  TH2 *hq0q3RhcCat1 = ratioSuppressLowStats(&predq0q3RhcCat1, "hq0q3RhcCat1", Form("RHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(1).c_str()) , pot_nd, rhcPOT, fakedata);
+  TH2 *hq0q3RhcCat2 = ratioSuppressLowStats(&predq0q3RhcCat2, "hq0q3RhcCat2", Form("RHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(2).c_str()) , pot_nd, rhcPOT, fakedata);
+  TH2 *hq0q3RhcCat3 = ratioSuppressLowStats(&predq0q3RhcCat3, "hq0q3RhcCat3", Form("RHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(3).c_str()) , pot_nd, rhcPOT, fakedata);
+  TH2 *hq0q3RhcCat4 = ratioSuppressLowStats(&predq0q3RhcCat4, "hq0q3RhcCat4", Form("RHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(4).c_str()) , pot_nd, rhcPOT, fakedata);
+  TH2 *hq0q3RhcCat5 = ratioSuppressLowStats(&predq0q3RhcCat5, "hq0q3RhcCat5", Form("RHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(5).c_str()) , pot_nd, rhcPOT, fakedata);
+  TH2 *hq0q3RhcCat6 = ratioSuppressLowStats(&predq0q3RhcCat6, "hq0q3RhcCat6", Form("RHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(6).c_str()) , pot_nd, rhcPOT, fakedata);
+  TH2 *hq0q3RhcCat7 = ratioSuppressLowStats(&predq0q3RhcCat7, "hq0q3RhcCat7", Form("RHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(7).c_str()) , pot_nd, rhcPOT, fakedata);
+  TH2 *hq0q3RhcCat8 = ratioSuppressLowStats(&predq0q3RhcCat8, "hq0q3RhcCat8", Form("RHC, reco %s; p_{vis} / (GeV/c); E_{vis} / GeV; NuWro/GENIE", catName(8).c_str()) , pot_nd, rhcPOT, fakedata);
 
   // Make most of these again
   // FHC
@@ -620,6 +622,7 @@ void q0q3Comp(const char* outfile,
   TH2 *q0q3FhcCat6 = makeHist2D("hq0q3FhcCat6", Form("FHC, true %s", catName(6).c_str()), &predq0q3FhcCat6, pot_nd);
   TH2 *q0q3FhcCat7 = makeHist2D("hq0q3FhcCat7", Form("FHC, true %s", catName(7).c_str()), &predq0q3FhcCat7, pot_nd);
   TH2 *q0q3FhcCat8 = makeHist2D("hq0q3FhcCat8", Form("FHC, true %s", catName(8).c_str()), &predq0q3FhcCat8, pot_nd);
+
   q0q3FhcCat1->Write();
   q0q3FhcCat2->Write();
   q0q3FhcCat3->Write();
@@ -699,6 +702,7 @@ void q0q3Comp(const char* outfile,
   hq0q3RecoRhcCat7->Write();
   hq0q3RecoRhcCat8->Write();
 
+  hq0q3Fhc->Write();
   hq0q3FhcCat1->Write();
   hq0q3FhcCat2->Write();
   hq0q3FhcCat3->Write();
@@ -708,6 +712,7 @@ void q0q3Comp(const char* outfile,
   hq0q3FhcCat7->Write();
   hq0q3FhcCat8->Write();
 
+  hq0q3Rhc->Write();
   hq0q3RhcCat1->Write();
   hq0q3RhcCat2->Write();
   hq0q3RhcCat3->Write();
