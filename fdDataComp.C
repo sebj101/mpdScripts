@@ -315,10 +315,10 @@ void fdDataComp(const char* outfile)
     THStack *hsnuefhc_q0q3  = makeDataQ0Q3Comp(Form("hsnuefhc_q0q3_%d", i), Form("#nu_{e} FHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNueFhcReco_wgt_q0q3, &predNueFhcReco_wgt, &predNueFhcReco, fakedatashift, this_calc, pot_fd);
     THStack *hsnuerhc_q0q3  = makeDataQ0Q3Comp(Form("hsnuerhc_q0q3_%d", i), Form("#nu_{e} RHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNueRhcReco_wgt_q0q3, &predNueRhcReco_wgt, &predNueRhcReco, fakedatashift, this_calc, pot_fd);
 
-    THStack *hrnumufhc = makeDataMCRatios(Form("hrnumufhc_%d", i), Form("#nu_{#mu} FHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNumuFhcReco_wgt_q0q3, &predNumuFhcReco, fakedatashift, this_calc, pot_fd);
-    THStack *hrnumurhc = makeDataMCRatios(Form("hrnumurhc_%d", i), Form("#nu_{#mu} RHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNumuRhcReco_wgt_q0q3, &predNumuRhcReco, fakedatashift, this_calc, pot_fd);
-    THStack *hrnuefhc  = makeDataMCRatios(Form("hrnuefhc_%d", i), Form("#nu_{e} FHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNueFhcReco_wgt_q0q3, &predNueFhcReco, fakedatashift, this_calc, pot_fd);
-    THStack *hrnuerhc  = makeDataMCRatios(Form("hrnuerhc_%d", i), Form("#nu_{e} RHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; Events / GeV", dcp), &predNueRhcReco_wgt_q0q3, &predNueRhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hrnumufhc = makeDataMCRatios(Form("hrnumufhc_%d", i), Form("#nu_{#mu} FHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; MC / Data", dcp), &predNumuFhcReco_wgt_q0q3, &predNumuFhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hrnumurhc = makeDataMCRatios(Form("hrnumurhc_%d", i), Form("#nu_{#mu} RHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; MC / Data", dcp), &predNumuRhcReco_wgt_q0q3, &predNumuRhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hrnuefhc  = makeDataMCRatios(Form("hrnuefhc_%d", i), Form("#nu_{e} FHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; MC / Data", dcp), &predNueFhcReco_wgt_q0q3, &predNueFhcReco, fakedatashift, this_calc, pot_fd);
+    THStack *hrnuerhc  = makeDataMCRatios(Form("hrnuerhc_%d", i), Form("#nu_{e} RHC, #delta_{CP} = %.3g; E_{#nu, reco} / GeV; MC / Data", dcp), &predNueRhcReco_wgt_q0q3, &predNueRhcReco, fakedatashift, this_calc, pot_fd);
 
     hsnumufhc_wgt->Write();
     hsnumurhc_wgt->Write();
