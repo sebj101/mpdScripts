@@ -1,5 +1,5 @@
 // fdFitLArRwt.C
-// Uses the new NuWro reweight syst (based upon the ND GAr data) to try and remove the delta CP bias
+// Uses the new NuWro reweight syst (based upon the ND LAr data) to try and remove the delta CP bias
 #include "StandardRecord/StandardRecord.h"
 #include "OscLib/func/IOscCalculator.h"
 #include "OscLib/func/OscCalculatorPMNSOpt.h"
