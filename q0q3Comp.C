@@ -121,8 +121,8 @@ TH2* ratioSuppressLowStats(PredictionInterp *pred, const char* namestub, const c
 {
   TH2 *hgenie = pred->PredictSyst(0, kNoShift).FakeData(inputPOT).ToTH2(inputPOT);
   TH2 *hnuwro = pred->PredictSyst(0, shift).FakeData(inputPOT).ToTH2(inputPOT);
-  hgenie->SetTitle(Form("%s GENIE; q_{3, reco} / GeV; q_{0, reco} / GeV; Events / (GeV)^{2}", title));
-  hnuwro->SetTitle(Form("%s NuWro; q_{3, reco} / GeV; q_{0, reco} / GeV; Events / (GeV)^{2}", title));
+  hgenie->SetTitle(Form("%s GENIE; p_{vis, reco} / GeV c^{-1}; E_{vis, reco} / GeV; Events / (GeV)^{2}", title));
+  hnuwro->SetTitle(Form("%s NuWro; p_{vis, reco} / GeV c^{-1}; E_{vis, reco} / GeV; Events / (GeV)^{2}", title));
   setHistAttr(hgenie);
   setHistAttr(hnuwro);
   hgenie->Scale(1, "width");
@@ -142,7 +142,7 @@ TH2* ratioSuppressLowStats(PredictionInterp *pred, const char* namestub, const c
     }
   }
   hnuwro->Divide(hgenie);
-  hnuwro->SetTitle(Form("%s: NuWro/GENIE; q_{3, reco} / GeV; q_{0, reco} / GeV; NuWro/GENIE", title));
+  hnuwro->SetTitle(Form("%s: NuWro/GENIE; p_{vis, reco} / GeV c^{-1}; E_{vis, reco} / GeV; NuWro/GENIE", title));
   hnuwro->SetName(Form("%s_ratio", namestub));
   return hnuwro;
 }
@@ -216,14 +216,14 @@ const std::vector<double> q0q3Edges = {0., 0.125, 0.25, 0.375, 0.5, 0.625, 0.75,
 				       3., 3.25, 3.5, 3.75,
 				       4., 5., 6.};
 const Binning q0q3Bins = Binning::Custom(q0q3Edges);
-const HistAxis axq0q3Reco("q_{3, reco} / GeV", q0q3Bins, kq3Reco,
-			  "q_{0, reco} / GeV", q0q3Bins, kq0Reco);
-const HistAxis axq0q3("q_{3, true} / GeV", q0q3Bins, kq3,
-		      "q_{0, true} / GeV", q0q3Bins, kq0);
-const HistAxis axq0Comp("q_{0, true} / GeV", q0q3Bins, kq0, 
-			"q_{0, reco} / GeV", q0q3Bins, kq0Reco);
-const HistAxis axq3Comp("q_{3, true} / GeV", q0q3Bins, kq3, 
-			"q_{3, reco} / GeV", q0q3Bins, kq3Reco);
+const HistAxis axq0q3Reco("p_{vis, reco} / GeV c^{-1}", q0q3Bins, kq3Reco,
+			  "E_{vis, reco} / GeV", q0q3Bins, kq0Reco);
+const HistAxis axq0q3("p_{vis, true} / GeV", q0q3Bins, kq3,
+		      "E_{vis, true} / GeV", q0q3Bins, kq0);
+const HistAxis axq0Comp("E_{vis, true} / GeV", q0q3Bins, kq0, 
+			"E_{vis, reco} / GeV", q0q3Bins, kq0Reco);
+const HistAxis axq3Comp("p_{vis, true} / GeV", q0q3Bins, kq3, 
+			"p_{vis, reco} / GeV c^{-1}", q0q3Bins, kq3Reco);
 
 // Cuts used in this analysis for various true and reco categories
 // True selections
@@ -332,7 +332,7 @@ const double fhcPOT = 1.9342e20;
 const double rhcPOT = 3.9302e20;
 
 void q0q3Comp(const char* outfile,
-	      const char* cafs="/dune/data/users/sbjones/gasTpcCAF/v9/")
+	      const char* cafs="/dune/data/users/sbjones/gasTpcCAF/v10/")
 {
   gROOT->SetBatch(kTRUE);
   rootlogon();
@@ -514,60 +514,60 @@ void q0q3Comp(const char* outfile,
   TFile *fout = new TFile(outfile, "recreate");
   fout->cd();
 
-  TH2* h2q0CompFhc   = makeHist2D("h2q0CompFhc", "q_{0} comparison for HPgTPC", &predq0CompFhc, pot_nd);
-  TH2* h2q3CompFhc   = makeHist2D("h2q3CompFhc", "q_{3} comparison for HPgTPC", &predq3CompFhc, pot_nd);
-  TH2* h2q0q3Fhc     = makeHist2D("h2q0q3Fhc", "q_{0}, q_{3} in HPgTPC", &predq0q3Fhc, pot_nd);
-  TH2* h2q0q3RecoFhc = makeHist2D("h2q0q3RecoFhc", "q_{0, reco}, q_{3, reco} in HPgTPC", &predq0q3RecoFhc, pot_nd);
+  TH2* h2q0CompFhc   = makeHist2D("h2q0CompFhc", "E_{vis} comparison for HPgTPC", &predq0CompFhc, pot_nd);
+  TH2* h2q3CompFhc   = makeHist2D("h2q3CompFhc", "p_{vis} comparison for HPgTPC", &predq3CompFhc, pot_nd);
+  TH2* h2q0q3Fhc     = makeHist2D("h2q0q3Fhc", "E_{vis}, p_{vis} in HPgTPC", &predq0q3Fhc, pot_nd);
+  TH2* h2q0q3RecoFhc = makeHist2D("h2q0q3RecoFhc", "E_{vis, reco}, p_{vis, reco} in HPgTPC", &predq0q3RecoFhc, pot_nd);
   h2q0CompFhc->Write();
   h2q3CompFhc->Write();
   h2q0q3Fhc->Write();
   h2q0q3RecoFhc->Write();
 
-  TH2* h2q0CompRhc   = makeHist2D("h2q0CompRhc", "q_{0} comparison for HPgTPC", &predq0CompRhc, pot_nd);
-  TH2* h2q3CompRhc   = makeHist2D("h2q3CompRhc", "q_{3} comparison for HPgTPC", &predq3CompRhc, pot_nd);
-  TH2* h2q0q3Rhc     = makeHist2D("h2q0q3Rhc", "q_{0}, q_{3} in HPgTPC", &predq0q3Rhc, pot_nd);
-  TH2* h2q0q3RecoRhc = makeHist2D("h2q0q3RecoRhc", "q_{0, reco}, q_{3, reco} in HPgTPC", &predq0q3RecoRhc, pot_nd);
+  TH2* h2q0CompRhc   = makeHist2D("h2q0CompRhc", "E_{vis} comparison for HPgTPC", &predq0CompRhc, pot_nd);
+  TH2* h2q3CompRhc   = makeHist2D("h2q3CompRhc", "p_{vis} comparison for HPgTPC", &predq3CompRhc, pot_nd);
+  TH2* h2q0q3Rhc     = makeHist2D("h2q0q3Rhc", "E_{vis}, p_{vis} in HPgTPC", &predq0q3Rhc, pot_nd);
+  TH2* h2q0q3RecoRhc = makeHist2D("h2q0q3RecoRhc", "E_{vis, reco}, p_{vis, reco} in HPgTPC", &predq0q3RecoRhc, pot_nd);
   h2q0CompRhc->Write();
   h2q3CompRhc->Write();
   h2q0q3Rhc->Write();
   h2q0q3RecoRhc->Write();
 
   // FHC
-  TH2 *h2q0CompFhcCat1 = makeHist2D("h2q0CompFhcCat1", Form("q_{0} comparison for HPgTPC, %s (FHC)", catName(1).c_str()), &predq0CompFhcCat1, pot_nd);
-  TH2 *h2q0CompFhcCat2 = makeHist2D("h2q0CompFhcCat2", Form("q_{0} comparison for HPgTPC, %s (FHC)", catName(2).c_str()), &predq0CompFhcCat2, pot_nd);
-  TH2 *h2q0CompFhcCat3 = makeHist2D("h2q0CompFhcCat3", Form("q_{0} comparison for HPgTPC, %s (FHC)", catName(3).c_str()), &predq0CompFhcCat3, pot_nd);
-  TH2 *h2q0CompFhcCat4 = makeHist2D("h2q0CompFhcCat4", Form("q_{0} comparison for HPgTPC, %s (FHC)", catName(4).c_str()), &predq0CompFhcCat4, pot_nd);
-  TH2 *h2q0CompFhcCat5 = makeHist2D("h2q0CompFhcCat5", Form("q_{0} comparison for HPgTPC, %s (FHC)", catName(5).c_str()), &predq0CompFhcCat5, pot_nd);
-  TH2 *h2q0CompFhcCat6 = makeHist2D("h2q0CompFhcCat6", Form("q_{0} comparison for HPgTPC, %s (FHC)", catName(6).c_str()), &predq0CompFhcCat6, pot_nd);
-  TH2 *h2q0CompFhcCat7 = makeHist2D("h2q0CompFhcCat7", Form("q_{0} comparison for HPgTPC, %s (FHC)", catName(7).c_str()), &predq0CompFhcCat7, pot_nd);
-  TH2 *h2q0CompFhcCat8 = makeHist2D("h2q0CompFhcCat8", Form("q_{0} comparison for HPgTPC, %s (FHC)", catName(8).c_str()), &predq0CompFhcCat8, pot_nd);
+  TH2 *h2q0CompFhcCat1 = makeHist2D("h2q0CompFhcCat1", Form("E_{vis} comparison for HPgTPC, %s (FHC)", catName(1).c_str()), &predq0CompFhcCat1, pot_nd);
+  TH2 *h2q0CompFhcCat2 = makeHist2D("h2q0CompFhcCat2", Form("E_{vis} comparison for HPgTPC, %s (FHC)", catName(2).c_str()), &predq0CompFhcCat2, pot_nd);
+  TH2 *h2q0CompFhcCat3 = makeHist2D("h2q0CompFhcCat3", Form("E_{vis} comparison for HPgTPC, %s (FHC)", catName(3).c_str()), &predq0CompFhcCat3, pot_nd);
+  TH2 *h2q0CompFhcCat4 = makeHist2D("h2q0CompFhcCat4", Form("E_{vis} comparison for HPgTPC, %s (FHC)", catName(4).c_str()), &predq0CompFhcCat4, pot_nd);
+  TH2 *h2q0CompFhcCat5 = makeHist2D("h2q0CompFhcCat5", Form("E_{vis} comparison for HPgTPC, %s (FHC)", catName(5).c_str()), &predq0CompFhcCat5, pot_nd);
+  TH2 *h2q0CompFhcCat6 = makeHist2D("h2q0CompFhcCat6", Form("E_{vis} comparison for HPgTPC, %s (FHC)", catName(6).c_str()), &predq0CompFhcCat6, pot_nd);
+  TH2 *h2q0CompFhcCat7 = makeHist2D("h2q0CompFhcCat7", Form("E_{vis} comparison for HPgTPC, %s (FHC)", catName(7).c_str()), &predq0CompFhcCat7, pot_nd);
+  TH2 *h2q0CompFhcCat8 = makeHist2D("h2q0CompFhcCat8", Form("E_{vis} comparison for HPgTPC, %s (FHC)", catName(8).c_str()), &predq0CompFhcCat8, pot_nd);
 
-  TH2 *h2q3CompFhcCat1 = makeHist2D("h2q3CompFhcCat1", Form("q_{3} comparison for HPgTPC, %s (FHC)", catName(1).c_str()), &predq3CompFhcCat1, pot_nd);
-  TH2 *h2q3CompFhcCat2 = makeHist2D("h2q3CompFhcCat2", Form("q_{3} comparison for HPgTPC, %s (FHC)", catName(2).c_str()), &predq3CompFhcCat2, pot_nd);
-  TH2 *h2q3CompFhcCat3 = makeHist2D("h2q3CompFhcCat3", Form("q_{3} comparison for HPgTPC, %s (FHC)", catName(3).c_str()), &predq3CompFhcCat3, pot_nd);
-  TH2 *h2q3CompFhcCat4 = makeHist2D("h2q3CompFhcCat4", Form("q_{3} comparison for HPgTPC, %s (FHC)", catName(4).c_str()), &predq3CompFhcCat4, pot_nd);
-  TH2 *h2q3CompFhcCat5 = makeHist2D("h2q3CompFhcCat5", Form("q_{3} comparison for HPgTPC, %s (FHC)", catName(5).c_str()), &predq3CompFhcCat5, pot_nd);
-  TH2 *h2q3CompFhcCat6 = makeHist2D("h2q3CompFhcCat6", Form("q_{3} comparison for HPgTPC, %s (FHC)", catName(6).c_str()), &predq3CompFhcCat6, pot_nd);
-  TH2 *h2q3CompFhcCat7 = makeHist2D("h2q3CompFhcCat7", Form("q_{3} comparison for HPgTPC, %s (FHC)", catName(7).c_str()), &predq3CompFhcCat7, pot_nd);
-  TH2 *h2q3CompFhcCat8 = makeHist2D("h2q3CompFhcCat8", Form("q_{3} comparison for HPgTPC, %s (FHC)", catName(8).c_str()), &predq3CompFhcCat8, pot_nd);
+  TH2 *h2q3CompFhcCat1 = makeHist2D("h2q3CompFhcCat1", Form("p_{vis} comparison for HPgTPC, %s (FHC)", catName(1).c_str()), &predq3CompFhcCat1, pot_nd);
+  TH2 *h2q3CompFhcCat2 = makeHist2D("h2q3CompFhcCat2", Form("p_{vis} comparison for HPgTPC, %s (FHC)", catName(2).c_str()), &predq3CompFhcCat2, pot_nd);
+  TH2 *h2q3CompFhcCat3 = makeHist2D("h2q3CompFhcCat3", Form("p_{vis} comparison for HPgTPC, %s (FHC)", catName(3).c_str()), &predq3CompFhcCat3, pot_nd);
+  TH2 *h2q3CompFhcCat4 = makeHist2D("h2q3CompFhcCat4", Form("p_{vis} comparison for HPgTPC, %s (FHC)", catName(4).c_str()), &predq3CompFhcCat4, pot_nd);
+  TH2 *h2q3CompFhcCat5 = makeHist2D("h2q3CompFhcCat5", Form("p_{vis} comparison for HPgTPC, %s (FHC)", catName(5).c_str()), &predq3CompFhcCat5, pot_nd);
+  TH2 *h2q3CompFhcCat6 = makeHist2D("h2q3CompFhcCat6", Form("p_{vis} comparison for HPgTPC, %s (FHC)", catName(6).c_str()), &predq3CompFhcCat6, pot_nd);
+  TH2 *h2q3CompFhcCat7 = makeHist2D("h2q3CompFhcCat7", Form("p_{vis} comparison for HPgTPC, %s (FHC)", catName(7).c_str()), &predq3CompFhcCat7, pot_nd);
+  TH2 *h2q3CompFhcCat8 = makeHist2D("h2q3CompFhcCat8", Form("p_{vis} comparison for HPgTPC, %s (FHC)", catName(8).c_str()), &predq3CompFhcCat8, pot_nd);
   // RHC
-  TH2 *h2q0CompRhcCat1 = makeHist2D("h2q0CompRhcCat1", Form("q_{0} comparison for HPgTPC, %s (RHC)", catName(1).c_str()), &predq0CompRhcCat1, pot_nd);
-  TH2 *h2q0CompRhcCat2 = makeHist2D("h2q0CompRhcCat2", Form("q_{0} comparison for HPgTPC, %s (RHC)", catName(2).c_str()), &predq0CompRhcCat2, pot_nd);
-  TH2 *h2q0CompRhcCat3 = makeHist2D("h2q0CompRhcCat3", Form("q_{0} comparison for HPgTPC, %s (RHC)", catName(3).c_str()), &predq0CompRhcCat3, pot_nd);
-  TH2 *h2q0CompRhcCat4 = makeHist2D("h2q0CompRhcCat4", Form("q_{0} comparison for HPgTPC, %s (RHC)", catName(4).c_str()), &predq0CompRhcCat4, pot_nd);
-  TH2 *h2q0CompRhcCat5 = makeHist2D("h2q0CompRhcCat5", Form("q_{0} comparison for HPgTPC, %s (RHC)", catName(5).c_str()), &predq0CompRhcCat5, pot_nd);
-  TH2 *h2q0CompRhcCat6 = makeHist2D("h2q0CompRhcCat6", Form("q_{0} comparison for HPgTPC, %s (RHC)", catName(6).c_str()), &predq0CompRhcCat6, pot_nd);
-  TH2 *h2q0CompRhcCat7 = makeHist2D("h2q0CompRhcCat7", Form("q_{0} comparison for HPgTPC, %s (RHC)", catName(7).c_str()), &predq0CompRhcCat7, pot_nd);
-  TH2 *h2q0CompRhcCat8 = makeHist2D("h2q0CompRhcCat8", Form("q_{0} comparison for HPgTPC, %s (RHC)", catName(8).c_str()), &predq0CompRhcCat8, pot_nd);
+  TH2 *h2q0CompRhcCat1 = makeHist2D("h2q0CompRhcCat1", Form("E_{vis} comparison for HPgTPC, %s (RHC)", catName(1).c_str()), &predq0CompRhcCat1, pot_nd);
+  TH2 *h2q0CompRhcCat2 = makeHist2D("h2q0CompRhcCat2", Form("E_{vis} comparison for HPgTPC, %s (RHC)", catName(2).c_str()), &predq0CompRhcCat2, pot_nd);
+  TH2 *h2q0CompRhcCat3 = makeHist2D("h2q0CompRhcCat3", Form("E_{vis} comparison for HPgTPC, %s (RHC)", catName(3).c_str()), &predq0CompRhcCat3, pot_nd);
+  TH2 *h2q0CompRhcCat4 = makeHist2D("h2q0CompRhcCat4", Form("E_{vis} comparison for HPgTPC, %s (RHC)", catName(4).c_str()), &predq0CompRhcCat4, pot_nd);
+  TH2 *h2q0CompRhcCat5 = makeHist2D("h2q0CompRhcCat5", Form("E_{vis} comparison for HPgTPC, %s (RHC)", catName(5).c_str()), &predq0CompRhcCat5, pot_nd);
+  TH2 *h2q0CompRhcCat6 = makeHist2D("h2q0CompRhcCat6", Form("E_{vis} comparison for HPgTPC, %s (RHC)", catName(6).c_str()), &predq0CompRhcCat6, pot_nd);
+  TH2 *h2q0CompRhcCat7 = makeHist2D("h2q0CompRhcCat7", Form("E_{vis} comparison for HPgTPC, %s (RHC)", catName(7).c_str()), &predq0CompRhcCat7, pot_nd);
+  TH2 *h2q0CompRhcCat8 = makeHist2D("h2q0CompRhcCat8", Form("E_{vis} comparison for HPgTPC, %s (RHC)", catName(8).c_str()), &predq0CompRhcCat8, pot_nd);
 
-  TH2 *h2q3CompRhcCat1 = makeHist2D("h2q3CompRhcCat1", Form("q_{3} comparison for HPgTPC, %s (RHC)", catName(1).c_str()), &predq3CompRhcCat1, pot_nd);
-  TH2 *h2q3CompRhcCat2 = makeHist2D("h2q3CompRhcCat2", Form("q_{3} comparison for HPgTPC, %s (RHC)", catName(2).c_str()), &predq3CompRhcCat2, pot_nd);
-  TH2 *h2q3CompRhcCat3 = makeHist2D("h2q3CompRhcCat3", Form("q_{3} comparison for HPgTPC, %s (RHC)", catName(3).c_str()), &predq3CompRhcCat3, pot_nd);
-  TH2 *h2q3CompRhcCat4 = makeHist2D("h2q3CompRhcCat4", Form("q_{3} comparison for HPgTPC, %s (RHC)", catName(4).c_str()), &predq3CompRhcCat4, pot_nd);
-  TH2 *h2q3CompRhcCat5 = makeHist2D("h2q3CompRhcCat5", Form("q_{3} comparison for HPgTPC, %s (RHC)", catName(5).c_str()), &predq3CompRhcCat5, pot_nd);
-  TH2 *h2q3CompRhcCat6 = makeHist2D("h2q3CompRhcCat6", Form("q_{3} comparison for HPgTPC, %s (RHC)", catName(6).c_str()), &predq3CompRhcCat6, pot_nd);
-  TH2 *h2q3CompRhcCat7 = makeHist2D("h2q3CompRhcCat7", Form("q_{3} comparison for HPgTPC, %s (RHC)", catName(7).c_str()), &predq3CompRhcCat7, pot_nd);
-  TH2 *h2q3CompRhcCat8 = makeHist2D("h2q3CompRhcCat8", Form("q_{3} comparison for HPgTPC, %s (RHC)", catName(8).c_str()), &predq3CompRhcCat8, pot_nd);
+  TH2 *h2q3CompRhcCat1 = makeHist2D("h2q3CompRhcCat1", Form("p_{vis} comparison for HPgTPC, %s (RHC)", catName(1).c_str()), &predq3CompRhcCat1, pot_nd);
+  TH2 *h2q3CompRhcCat2 = makeHist2D("h2q3CompRhcCat2", Form("p_{vis} comparison for HPgTPC, %s (RHC)", catName(2).c_str()), &predq3CompRhcCat2, pot_nd);
+  TH2 *h2q3CompRhcCat3 = makeHist2D("h2q3CompRhcCat3", Form("p_{vis} comparison for HPgTPC, %s (RHC)", catName(3).c_str()), &predq3CompRhcCat3, pot_nd);
+  TH2 *h2q3CompRhcCat4 = makeHist2D("h2q3CompRhcCat4", Form("p_{vis} comparison for HPgTPC, %s (RHC)", catName(4).c_str()), &predq3CompRhcCat4, pot_nd);
+  TH2 *h2q3CompRhcCat5 = makeHist2D("h2q3CompRhcCat5", Form("p_{vis} comparison for HPgTPC, %s (RHC)", catName(5).c_str()), &predq3CompRhcCat5, pot_nd);
+  TH2 *h2q3CompRhcCat6 = makeHist2D("h2q3CompRhcCat6", Form("p_{vis} comparison for HPgTPC, %s (RHC)", catName(6).c_str()), &predq3CompRhcCat6, pot_nd);
+  TH2 *h2q3CompRhcCat7 = makeHist2D("h2q3CompRhcCat7", Form("p_{vis} comparison for HPgTPC, %s (RHC)", catName(7).c_str()), &predq3CompRhcCat7, pot_nd);
+  TH2 *h2q3CompRhcCat8 = makeHist2D("h2q3CompRhcCat8", Form("p_{vis} comparison for HPgTPC, %s (RHC)", catName(8).c_str()), &predq3CompRhcCat8, pot_nd);
 
   TH2 *hq0q3RecoFhc = ratioSuppressLowStats(&predq0q3RecoFhc, "hq0q3RecoFhc", "FHC", pot_nd, fhcPOT, fakedata);
   TH2 *hq0q3RecoRhc = ratioSuppressLowStats(&predq0q3RecoRhc, "hq0q3RecoRhc", "RHC", pot_nd, rhcPOT, fakedata);
