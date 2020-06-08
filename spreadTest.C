@@ -63,7 +63,7 @@ std::string catName(const int cat)
   else if (cat==3) name="1#pi^{+}";
   else if (cat==4) name="1#pi^{0}";
   else if (cat==5) name="2#pi";
-  else if (cat==6) name=">2#pi";
+  else if (cat==6) name="#geq3#pi";
   return name;
 }
 
@@ -113,9 +113,9 @@ int colourFromCat(const int cat)
   if (cat==1) col = 632; // kRed
   else if (cat==2) col = 600; // kBlue
   else if (cat==3) col = 1;   // kBlack
-  else if (cat==4) col = 417; // kGreen+1
+  else if (cat==4) col = 418; // kGreen+2
   else if (cat==5) col = 618; // kMagenta+2
-  else if (cat==6) col = 802; // kOrange+2
+  else if (cat==6) col = 807; // kOrange+7
   //else col=1; // kBlack
 
   return col;
@@ -179,10 +179,12 @@ const double years = 1.; // of POT
 const double pot_fd = years * POT120 * 40/1.13;
 const double pot_nd = years * POT120;
 // True MC files POT
-const double fhcPOT = 1.9342e20;
-const double rhcPOT = 3.9302e20;
+const double fhcPOT = 9.66489e20;
+const double rhcPOT = 1.96012e21;
 
 const double mmu = 0.10566; // GeV/c^2
+const double mpipm = 0.13957;
+const double mpi0  = 0.13498;
 
 // Vars
 // Reconstructed particle multiplicities
@@ -202,7 +204,21 @@ const Var kP         = SIMPLEVAR(dune.nP);
 const Var kOther     = SIMPLEVAR(dune.niother) + SIMPLEVAR(dune.nNucleus);
 const Var kHad       = SIMPLEVAR(dune.nipip)+SIMPLEVAR(dune.nipim)+SIMPLEVAR(dune.nipi0)+SIMPLEVAR(dune.nikp)+SIMPLEVAR(dune.nikm)+SIMPLEVAR(dune.nik0)+SIMPLEVAR(dune.nP)+SIMPLEVAR(dune.nN)/*+SIMPLEVAR(dune.niother)+SIMPLEVAR(dune.nNucleus)*/;
 const Var kChargedHad = SIMPLEVAR(dune.nipip)+SIMPLEVAR(dune.nipim)+SIMPLEVAR(dune.nikp)+SIMPLEVAR(dune.nikm)+SIMPLEVAR(dune.nP);
-const Var kRecoNumu  =  SIMPLEVAR(dune.reco_numu);
+const Var kRecoNumu  = SIMPLEVAR(dune.reco_numu);
+const Var kQ2        = SIMPLEVAR(dune.Q2); 
+
+// Q2 with true Evis
+const Var kQ2Vis({"dune.ePip", "dune.ePim", "dune.ePi0", "dune.eP", "dune.nipi0", "dune.nipim", "dune.nipip", "dune.LepE", "dune.LepNuAngle"},
+	      [](const caf::StandardRecord* sr) {
+		// Define as MINERvA available energy
+		double q2 = 0.;
+		if (sr->dune.LepE !=0) {
+		  double q0 = sr->dune.ePi0 + sr->dune.nipi0*mpi0 + sr->dune.ePip + sr->dune.ePim + (sr->dune.nipip + sr->dune.nipim)*mpipm + sr->dune.eP;
+		  double pmu = sqrt( sr->dune.LepE*sr->dune.LepE - mmu*mmu );
+		  q2 = 2*(q0+sr->dune.LepE) * (sr->dune.LepE - pmu*TMath::Cos(sr->dune.LepNuAngle)) - mmu*mmu;
+		}
+		return q2;
+	      });
 
 // Reco Q2
 const Var kRecoQ2({"dune.Ev_reco", "dune.Elep_reco", "dune.theta_reco"},
@@ -259,9 +275,11 @@ const HistAxis axCategory("True category", binsCategory, kTrueCategory,
 
 const int nBinsKinematics = 20;
 const Binning binsW  = Binning::Simple(20, 0., 5.);
-const Binning binsQ2 = Binning::Simple(20, 0., 5.);
+const Binning binsQ2 = Binning::Simple(15, 0., 3.);
 const HistAxis axRecoW ("W_{reco} / GeV", binsW, kRecoW);
-const HistAxis axRecoQ2("Q^{2}_{reco} / (GeV)^{2}", binsQ2, kRecoQ2);
+const HistAxis axRecoQ2("Q_{reco}^{2} / (GeV)^{2}", binsQ2, kRecoQ2);
+const HistAxis axQ2("Q^{2} / (GeV)^{2}", binsQ2, kQ2);
+const HistAxis axQ2Vis("Q_{vis}^{2} / (GeV)^{2}", binsQ2, kQ2Vis);
 
 // Cuts used in this analysis for various true and reco categories
 // True selections
@@ -341,7 +359,7 @@ const Cut kPassRecoCat6({},
 			});
 
 void spreadTest(const char *outfile, 
-		const char *garDir="/dune/data/users/sbjones/gasTpcCAF/v9/") 
+		const char *garDir="/dune/data/users/sbjones/gasTpcCAF/v10/") 
 {
   gROOT->SetBatch(kTRUE);
   rootlogon();
@@ -400,6 +418,37 @@ void spreadTest(const char *outfile,
   PredictionInterp predFhcWCat4(systlist, 0, genFhcWCat4, loadersGArFHC);
   PredictionInterp predFhcWCat5(systlist, 0, genFhcWCat5, loadersGArFHC);
   PredictionInterp predFhcWCat6(systlist, 0, genFhcWCat6, loadersGArFHC);
+  // Evis
+  NoOscPredictionGenerator genFhcQ2Vis(axQ2Vis, kIsTrueGasFV);
+  NoOscPredictionGenerator genFhcQ2VisCat1(axQ2Vis, kIsTrueGasFV && kPassCat1);
+  NoOscPredictionGenerator genFhcQ2VisCat2(axQ2Vis, kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genFhcQ2VisCat3(axQ2Vis, kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genFhcQ2VisCat4(axQ2Vis, kIsTrueGasFV && kPassCat4);
+  NoOscPredictionGenerator genFhcQ2VisCat5(axQ2Vis, kIsTrueGasFV && kPassCat5);
+  NoOscPredictionGenerator genFhcQ2VisCat6(axQ2Vis, kIsTrueGasFV && kPassCat6);
+  PredictionInterp predFhcQ2Vis(systlist, 0, genFhcQ2Vis, loadersGArFHC);
+  PredictionInterp predFhcQ2VisCat1(systlist, 0, genFhcQ2VisCat1, loadersGArFHC);
+  PredictionInterp predFhcQ2VisCat2(systlist, 0, genFhcQ2VisCat2, loadersGArFHC);
+  PredictionInterp predFhcQ2VisCat3(systlist, 0, genFhcQ2VisCat3, loadersGArFHC);
+  PredictionInterp predFhcQ2VisCat4(systlist, 0, genFhcQ2VisCat4, loadersGArFHC);
+  PredictionInterp predFhcQ2VisCat5(systlist, 0, genFhcQ2VisCat5, loadersGArFHC);
+  PredictionInterp predFhcQ2VisCat6(systlist, 0, genFhcQ2VisCat6, loadersGArFHC);
+  // True Q2
+  NoOscPredictionGenerator genFhcQ2True(axQ2, kIsTrueGasFV);
+  NoOscPredictionGenerator genFhcQ2TrueCat1(axQ2, kIsTrueGasFV && kPassCat1);
+  NoOscPredictionGenerator genFhcQ2TrueCat2(axQ2, kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genFhcQ2TrueCat3(axQ2, kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genFhcQ2TrueCat4(axQ2, kIsTrueGasFV && kPassCat4);
+  NoOscPredictionGenerator genFhcQ2TrueCat5(axQ2, kIsTrueGasFV && kPassCat5);
+  NoOscPredictionGenerator genFhcQ2TrueCat6(axQ2, kIsTrueGasFV && kPassCat6);
+  PredictionInterp predFhcQ2True(systlist, 0, genFhcQ2True, loadersGArFHC);
+  PredictionInterp predFhcQ2TrueCat1(systlist, 0, genFhcQ2TrueCat1, loadersGArFHC);
+  PredictionInterp predFhcQ2TrueCat2(systlist, 0, genFhcQ2TrueCat2, loadersGArFHC);
+  PredictionInterp predFhcQ2TrueCat3(systlist, 0, genFhcQ2TrueCat3, loadersGArFHC);
+  PredictionInterp predFhcQ2TrueCat4(systlist, 0, genFhcQ2TrueCat4, loadersGArFHC);
+  PredictionInterp predFhcQ2TrueCat5(systlist, 0, genFhcQ2TrueCat5, loadersGArFHC);
+  PredictionInterp predFhcQ2TrueCat6(systlist, 0, genFhcQ2TrueCat6, loadersGArFHC);
+
   // Reco categories
   NoOscPredictionGenerator genFhcQ2RecoCat1(axRecoQ2,kPassND_FHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
   NoOscPredictionGenerator genFhcQ2RecoCat2(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat2);
@@ -455,6 +504,37 @@ void spreadTest(const char *outfile,
   PredictionInterp predRhcWCat4(systlist, 0, genRhcWCat4, loadersGArRHC);
   PredictionInterp predRhcWCat5(systlist, 0, genRhcWCat5, loadersGArRHC);
   PredictionInterp predRhcWCat6(systlist, 0, genRhcWCat6, loadersGArRHC);
+  // Evis
+  NoOscPredictionGenerator genRhcQ2Vis(axQ2Vis, kIsTrueGasFV);
+  NoOscPredictionGenerator genRhcQ2VisCat1(axQ2Vis, kIsTrueGasFV && kPassCat1);
+  NoOscPredictionGenerator genRhcQ2VisCat2(axQ2Vis, kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genRhcQ2VisCat3(axQ2Vis, kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genRhcQ2VisCat4(axQ2Vis, kIsTrueGasFV && kPassCat4);
+  NoOscPredictionGenerator genRhcQ2VisCat5(axQ2Vis, kIsTrueGasFV && kPassCat5);
+  NoOscPredictionGenerator genRhcQ2VisCat6(axQ2Vis, kIsTrueGasFV && kPassCat6);
+  PredictionInterp predRhcQ2Vis(systlist, 0, genRhcQ2Vis, loadersGArRHC);
+  PredictionInterp predRhcQ2VisCat1(systlist, 0, genRhcQ2VisCat1, loadersGArRHC);
+  PredictionInterp predRhcQ2VisCat2(systlist, 0, genRhcQ2VisCat2, loadersGArRHC);
+  PredictionInterp predRhcQ2VisCat3(systlist, 0, genRhcQ2VisCat3, loadersGArRHC);
+  PredictionInterp predRhcQ2VisCat4(systlist, 0, genRhcQ2VisCat4, loadersGArRHC);
+  PredictionInterp predRhcQ2VisCat5(systlist, 0, genRhcQ2VisCat5, loadersGArRHC);
+  PredictionInterp predRhcQ2VisCat6(systlist, 0, genRhcQ2VisCat6, loadersGArRHC);
+  // True Q2
+  NoOscPredictionGenerator genRhcQ2True(axQ2, kIsTrueGasFV);
+  NoOscPredictionGenerator genRhcQ2TrueCat1(axQ2, kIsTrueGasFV && kPassCat1);
+  NoOscPredictionGenerator genRhcQ2TrueCat2(axQ2, kIsTrueGasFV && kPassCat2);
+  NoOscPredictionGenerator genRhcQ2TrueCat3(axQ2, kIsTrueGasFV && kPassCat3);
+  NoOscPredictionGenerator genRhcQ2TrueCat4(axQ2, kIsTrueGasFV && kPassCat4);
+  NoOscPredictionGenerator genRhcQ2TrueCat5(axQ2, kIsTrueGasFV && kPassCat5);
+  NoOscPredictionGenerator genRhcQ2TrueCat6(axQ2, kIsTrueGasFV && kPassCat6);
+  PredictionInterp predRhcQ2True(systlist, 0, genRhcQ2True, loadersGArRHC);
+  PredictionInterp predRhcQ2TrueCat1(systlist, 0, genRhcQ2TrueCat1, loadersGArRHC);
+  PredictionInterp predRhcQ2TrueCat2(systlist, 0, genRhcQ2TrueCat2, loadersGArRHC);
+  PredictionInterp predRhcQ2TrueCat3(systlist, 0, genRhcQ2TrueCat3, loadersGArRHC);
+  PredictionInterp predRhcQ2TrueCat4(systlist, 0, genRhcQ2TrueCat4, loadersGArRHC);
+  PredictionInterp predRhcQ2TrueCat5(systlist, 0, genRhcQ2TrueCat5, loadersGArRHC);
+  PredictionInterp predRhcQ2TrueCat6(systlist, 0, genRhcQ2TrueCat6, loadersGArRHC);
+
   // Reco categories
   NoOscPredictionGenerator genRhcQ2RecoCat1(axRecoQ2,kPassND_RHC_NUMU && kIsTrueGasFV && kPassRecoCat1);
   NoOscPredictionGenerator genRhcQ2RecoCat2(axRecoQ2, kRecoNumu==1 && kIsTrueGasFV && kPassRecoCat2);
@@ -792,6 +872,96 @@ void spreadTest(const char *outfile,
   THStack *hsFhcWReco_spread = makeCatStack(fhcWRecoVec_spread, "hsFhcWReco_spread", "NuWro/GENIE for various reconstructed final states; W_{reco} / GeV; NuWro/GENIE");
   hsFhcWReco_spread->Write();
 
+  // Q2 true with true selection
+  TH1 *hFhcQ2True     = predFhcQ2True.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat1 = predFhcQ2TrueCat1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat2 = predFhcQ2TrueCat2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat3 = predFhcQ2TrueCat3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat4 = predFhcQ2TrueCat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat5 = predFhcQ2TrueCat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat6 = predFhcQ2TrueCat6.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2True_n     = predFhcQ2True.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat1_n = predFhcQ2TrueCat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat2_n = predFhcQ2TrueCat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat3_n = predFhcQ2TrueCat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat4_n = predFhcQ2TrueCat4.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat5_n = predFhcQ2TrueCat5.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2TrueCat6_n = predFhcQ2TrueCat6.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  doHistStuff(hFhcQ2True,"hFhcQ2True","CC inc.");
+  doHistStuff(hFhcQ2TrueCat1,"hFhcQ2TrueCat1","0#pi");
+  doHistStuff(hFhcQ2TrueCat2,"hFhcQ2TrueCat2","1#pi^{-}");
+  doHistStuff(hFhcQ2TrueCat3,"hFhcQ2TrueCat3","1#pi^{+}");
+  doHistStuff(hFhcQ2TrueCat4,"hFhcQ2TrueCat4","1#pi^{0}");
+  doHistStuff(hFhcQ2TrueCat5,"hFhcQ2TrueCat5","2#pi");
+  doHistStuff(hFhcQ2TrueCat6,"hFhcQ2TrueCat6",">2#pi");
+  doHistStuff(hFhcQ2True_n,"hFhcQ2True_n","CC inc.");
+  doHistStuff(hFhcQ2TrueCat1_n,"hFhcQ2TrueCat1_n","0#pi");
+  doHistStuff(hFhcQ2TrueCat2_n,"hFhcQ2TrueCat2_n","1#pi^{-}");
+  doHistStuff(hFhcQ2TrueCat3_n,"hFhcQ2TrueCat3_n","1#pi^{+}");
+  doHistStuff(hFhcQ2TrueCat4_n,"hFhcQ2TrueCat4_n","1#pi^{0}");
+  doHistStuff(hFhcQ2TrueCat5_n,"hFhcQ2TrueCat5_n","2#pi");
+  doHistStuff(hFhcQ2TrueCat6_n,"hFhcQ2TrueCat6_n",">2#pi");
+  TH1D *hrFhcQ2TrueCat1 = ratioSuppressLowStats(hFhcQ2TrueCat1, hFhcQ2TrueCat1_n, "hrFhcQ2TrueCat1", "0#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2TrueCat2 = ratioSuppressLowStats(hFhcQ2TrueCat2, hFhcQ2TrueCat2_n, "hrFhcQ2TrueCat2", "1#pi^{-}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2TrueCat3 = ratioSuppressLowStats(hFhcQ2TrueCat3, hFhcQ2TrueCat3_n, "hrFhcQ2TrueCat3", "1#pi^{+}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2TrueCat4 = ratioSuppressLowStats(hFhcQ2TrueCat4, hFhcQ2TrueCat4_n, "hrFhcQ2TrueCat4", "1#pi^{0}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2TrueCat5 = ratioSuppressLowStats(hFhcQ2TrueCat5, hFhcQ2TrueCat5_n, "hrFhcQ2TrueCat5", "2#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2TrueCat6 = ratioSuppressLowStats(hFhcQ2TrueCat6, hFhcQ2TrueCat6_n, "hrFhcQ2TrueCat6", ">2#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  std::vector<TH1*> fhcQ2TrueVec;
+  fhcQ2TrueVec.push_back(hrFhcQ2TrueCat1);
+  fhcQ2TrueVec.push_back(hrFhcQ2TrueCat2);
+  fhcQ2TrueVec.push_back(hrFhcQ2TrueCat3);
+  fhcQ2TrueVec.push_back(hrFhcQ2TrueCat4);
+  fhcQ2TrueVec.push_back(hrFhcQ2TrueCat5);
+  fhcQ2TrueVec.push_back(hrFhcQ2TrueCat6);
+  THStack *hsFhcQ2True = makeCatStack(fhcQ2TrueVec, "hsFhcQ2True", "NuWro/GENIE for various reconstructed final states; Q^{2} / GeV^{2}; NuWro/GENIE");
+  hsFhcQ2True->Write();
+
+  // Q2Vis
+  TH1 *hFhcQ2Vis     = predFhcQ2Vis.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat1 = predFhcQ2VisCat1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat2 = predFhcQ2VisCat2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat3 = predFhcQ2VisCat3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat4 = predFhcQ2VisCat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat5 = predFhcQ2VisCat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat6 = predFhcQ2VisCat6.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2Vis_n     = predFhcQ2Vis.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat1_n = predFhcQ2VisCat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat2_n = predFhcQ2VisCat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat3_n = predFhcQ2VisCat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat4_n = predFhcQ2VisCat4.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat5_n = predFhcQ2VisCat5.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hFhcQ2VisCat6_n = predFhcQ2VisCat6.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  doHistStuff(hFhcQ2Vis,"hFhcQ2Vis","CC inc.");
+  doHistStuff(hFhcQ2VisCat1,"hFhcQ2VisCat1","0#pi");
+  doHistStuff(hFhcQ2VisCat2,"hFhcQ2VisCat2","1#pi^{-}");
+  doHistStuff(hFhcQ2VisCat3,"hFhcQ2VisCat3","1#pi^{+}");
+  doHistStuff(hFhcQ2VisCat4,"hFhcQ2VisCat4","1#pi^{0}");
+  doHistStuff(hFhcQ2VisCat5,"hFhcQ2VisCat5","2#pi");
+  doHistStuff(hFhcQ2VisCat6,"hFhcQ2VisCat6",">2#pi");
+  doHistStuff(hFhcQ2Vis_n,"hFhcQ2Vis_n","CC inc.");
+  doHistStuff(hFhcQ2VisCat1_n,"hFhcQ2VisCat1_n","0#pi");
+  doHistStuff(hFhcQ2VisCat2_n,"hFhcQ2VisCat2_n","1#pi^{-}");
+  doHistStuff(hFhcQ2VisCat3_n,"hFhcQ2VisCat3_n","1#pi^{+}");
+  doHistStuff(hFhcQ2VisCat4_n,"hFhcQ2VisCat4_n","1#pi^{0}");
+  doHistStuff(hFhcQ2VisCat5_n,"hFhcQ2VisCat5_n","2#pi");
+  doHistStuff(hFhcQ2VisCat6_n,"hFhcQ2VisCat6_n",">2#pi");
+  TH1D *hrFhcQ2VisCat1 = ratioSuppressLowStats(hFhcQ2VisCat1, hFhcQ2VisCat1_n, "hrFhcQ2VisCat1", "0#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2VisCat2 = ratioSuppressLowStats(hFhcQ2VisCat2, hFhcQ2VisCat2_n, "hrFhcQ2VisCat2", "1#pi^{-}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2VisCat3 = ratioSuppressLowStats(hFhcQ2VisCat3, hFhcQ2VisCat3_n, "hrFhcQ2VisCat3", "1#pi^{+}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2VisCat4 = ratioSuppressLowStats(hFhcQ2VisCat4, hFhcQ2VisCat4_n, "hrFhcQ2VisCat4", "1#pi^{0}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2VisCat5 = ratioSuppressLowStats(hFhcQ2VisCat5, hFhcQ2VisCat5_n, "hrFhcQ2VisCat5", "2#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  TH1D *hrFhcQ2VisCat6 = ratioSuppressLowStats(hFhcQ2VisCat6, hFhcQ2VisCat6_n, "hrFhcQ2VisCat6", ">2#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, fhcPOT);
+  std::vector<TH1*> fhcQ2VisVec;
+  fhcQ2VisVec.push_back(hrFhcQ2VisCat1);
+  fhcQ2VisVec.push_back(hrFhcQ2VisCat2);
+  fhcQ2VisVec.push_back(hrFhcQ2VisCat3);
+  fhcQ2VisVec.push_back(hrFhcQ2VisCat4);
+  fhcQ2VisVec.push_back(hrFhcQ2VisCat5);
+  fhcQ2VisVec.push_back(hrFhcQ2VisCat6);
+  THStack *hsFhcQ2Vis = makeCatStack(fhcQ2VisVec, "hsFhcQ2Vis", "NuWro/GENIE for various reconstructed final states; Q^{2} / GeV^{2}; NuWro/GENIE");
+  hsFhcQ2Vis->Write();
+
   //------------------------------------RHC------------------------------
   TH2 *h2Catrhc       = predRhcCat.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH2(pot_nd);
   TH2 *h2Catrhc_nuwro = predRhcCat.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH2(pot_nd);
@@ -1095,7 +1265,97 @@ void spreadTest(const char *outfile,
   THStack *hsRhcWReco_spread = makeCatStack(rhcWRecoVec_spread, "hsRhcWReco_spread", "NuWro/GENIE for various reconstructed final states; W_{reco} / GeV; NuWro/GENIE");
   hsRhcWReco_spread->Write();
 
-  TLine *l = new TLine(0., 1., 5., 1.);
+  // Q2 true with true selection
+  TH1 *hRhcQ2True     = predRhcQ2True.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat1 = predRhcQ2TrueCat1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat2 = predRhcQ2TrueCat2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat3 = predRhcQ2TrueCat3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat4 = predRhcQ2TrueCat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat5 = predRhcQ2TrueCat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat6 = predRhcQ2TrueCat6.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2True_n     = predRhcQ2True.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat1_n = predRhcQ2TrueCat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat2_n = predRhcQ2TrueCat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat3_n = predRhcQ2TrueCat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat4_n = predRhcQ2TrueCat4.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat5_n = predRhcQ2TrueCat5.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2TrueCat6_n = predRhcQ2TrueCat6.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  doHistStuff(hRhcQ2True,"hRhcQ2True","CC inc.");
+  doHistStuff(hRhcQ2TrueCat1,"hRhcQ2TrueCat1","0#pi");
+  doHistStuff(hRhcQ2TrueCat2,"hRhcQ2TrueCat2","1#pi^{-}");
+  doHistStuff(hRhcQ2TrueCat3,"hRhcQ2TrueCat3","1#pi^{+}");
+  doHistStuff(hRhcQ2TrueCat4,"hRhcQ2TrueCat4","1#pi^{0}");
+  doHistStuff(hRhcQ2TrueCat5,"hRhcQ2TrueCat5","2#pi");
+  doHistStuff(hRhcQ2TrueCat6,"hRhcQ2TrueCat6",">2#pi");
+  doHistStuff(hRhcQ2True_n,"hRhcQ2True_n","CC inc.");
+  doHistStuff(hRhcQ2TrueCat1_n,"hRhcQ2TrueCat1_n","0#pi");
+  doHistStuff(hRhcQ2TrueCat2_n,"hRhcQ2TrueCat2_n","1#pi^{-}");
+  doHistStuff(hRhcQ2TrueCat3_n,"hRhcQ2TrueCat3_n","1#pi^{+}");
+  doHistStuff(hRhcQ2TrueCat4_n,"hRhcQ2TrueCat4_n","1#pi^{0}");
+  doHistStuff(hRhcQ2TrueCat5_n,"hRhcQ2TrueCat5_n","2#pi");
+  doHistStuff(hRhcQ2TrueCat6_n,"hRhcQ2TrueCat6_n",">2#pi");
+  TH1D *hrRhcQ2TrueCat1 = ratioSuppressLowStats(hRhcQ2TrueCat1, hRhcQ2TrueCat1_n, "hrRhcQ2TrueCat1", "0#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2TrueCat2 = ratioSuppressLowStats(hRhcQ2TrueCat2, hRhcQ2TrueCat2_n, "hrRhcQ2TrueCat2", "1#pi^{-}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2TrueCat3 = ratioSuppressLowStats(hRhcQ2TrueCat3, hRhcQ2TrueCat3_n, "hrRhcQ2TrueCat3", "1#pi^{+}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2TrueCat4 = ratioSuppressLowStats(hRhcQ2TrueCat4, hRhcQ2TrueCat4_n, "hrRhcQ2TrueCat4", "1#pi^{0}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2TrueCat5 = ratioSuppressLowStats(hRhcQ2TrueCat5, hRhcQ2TrueCat5_n, "hrRhcQ2TrueCat5", "2#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2TrueCat6 = ratioSuppressLowStats(hRhcQ2TrueCat6, hRhcQ2TrueCat6_n, "hrRhcQ2TrueCat6", ">2#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  std::vector<TH1*> rhcQ2TrueVec;
+  rhcQ2TrueVec.push_back(hrRhcQ2TrueCat1);
+  rhcQ2TrueVec.push_back(hrRhcQ2TrueCat2);
+  rhcQ2TrueVec.push_back(hrRhcQ2TrueCat3);
+  rhcQ2TrueVec.push_back(hrRhcQ2TrueCat4);
+  rhcQ2TrueVec.push_back(hrRhcQ2TrueCat5);
+  rhcQ2TrueVec.push_back(hrRhcQ2TrueCat6);
+  THStack *hsRhcQ2True = makeCatStack(rhcQ2TrueVec, "hsRhcQ2True", "NuWro/GENIE for various reconstructed final states; Q^{2} / GeV^{2}; NuWro/GENIE");
+  hsRhcQ2True->Write();
+
+  // Q2Vis
+  TH1 *hRhcQ2Vis     = predRhcQ2Vis.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat1 = predRhcQ2VisCat1.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat2 = predRhcQ2VisCat2.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat3 = predRhcQ2VisCat3.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat4 = predRhcQ2VisCat4.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat5 = predRhcQ2VisCat5.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat6 = predRhcQ2VisCat6.PredictSyst(0, kNoShift).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2Vis_n     = predRhcQ2Vis.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat1_n = predRhcQ2VisCat1.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat2_n = predRhcQ2VisCat2.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat3_n = predRhcQ2VisCat3.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat4_n = predRhcQ2VisCat4.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat5_n = predRhcQ2VisCat5.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  TH1 *hRhcQ2VisCat6_n = predRhcQ2VisCat6.PredictSyst(0, fakedata).FakeData(pot_nd).ToTH1(pot_nd);
+  doHistStuff(hRhcQ2Vis,"hRhcQ2Vis","CC inc.");
+  doHistStuff(hRhcQ2VisCat1,"hRhcQ2VisCat1","0#pi");
+  doHistStuff(hRhcQ2VisCat2,"hRhcQ2VisCat2","1#pi^{-}");
+  doHistStuff(hRhcQ2VisCat3,"hRhcQ2VisCat3","1#pi^{+}");
+  doHistStuff(hRhcQ2VisCat4,"hRhcQ2VisCat4","1#pi^{0}");
+  doHistStuff(hRhcQ2VisCat5,"hRhcQ2VisCat5","2#pi");
+  doHistStuff(hRhcQ2VisCat6,"hRhcQ2VisCat6",">2#pi");
+  doHistStuff(hRhcQ2Vis_n,"hRhcQ2Vis_n","CC inc.");
+  doHistStuff(hRhcQ2VisCat1_n,"hRhcQ2VisCat1_n","0#pi");
+  doHistStuff(hRhcQ2VisCat2_n,"hRhcQ2VisCat2_n","1#pi^{-}");
+  doHistStuff(hRhcQ2VisCat3_n,"hRhcQ2VisCat3_n","1#pi^{+}");
+  doHistStuff(hRhcQ2VisCat4_n,"hRhcQ2VisCat4_n","1#pi^{0}");
+  doHistStuff(hRhcQ2VisCat5_n,"hRhcQ2VisCat5_n","2#pi");
+  doHistStuff(hRhcQ2VisCat6_n,"hRhcQ2VisCat6_n",">2#pi");
+  TH1D *hrRhcQ2VisCat1 = ratioSuppressLowStats(hRhcQ2VisCat1, hRhcQ2VisCat1_n, "hrRhcQ2VisCat1", "0#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2VisCat2 = ratioSuppressLowStats(hRhcQ2VisCat2, hRhcQ2VisCat2_n, "hrRhcQ2VisCat2", "1#pi^{-}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2VisCat3 = ratioSuppressLowStats(hRhcQ2VisCat3, hRhcQ2VisCat3_n, "hrRhcQ2VisCat3", "1#pi^{+}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2VisCat4 = ratioSuppressLowStats(hRhcQ2VisCat4, hRhcQ2VisCat4_n, "hrRhcQ2VisCat4", "1#pi^{0}; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2VisCat5 = ratioSuppressLowStats(hRhcQ2VisCat5, hRhcQ2VisCat5_n, "hrRhcQ2VisCat5", "2#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  TH1D *hrRhcQ2VisCat6 = ratioSuppressLowStats(hRhcQ2VisCat6, hRhcQ2VisCat6_n, "hrRhcQ2VisCat6", ">2#pi; Q^{2} / (GeV)^{2}; NuWro/GENIE", pot_nd, rhcPOT);
+  std::vector<TH1*> rhcQ2VisVec;
+  rhcQ2VisVec.push_back(hrRhcQ2VisCat1);
+  rhcQ2VisVec.push_back(hrRhcQ2VisCat2);
+  rhcQ2VisVec.push_back(hrRhcQ2VisCat3);
+  rhcQ2VisVec.push_back(hrRhcQ2VisCat4);
+  rhcQ2VisVec.push_back(hrRhcQ2VisCat5);
+  rhcQ2VisVec.push_back(hrRhcQ2VisCat6);
+  THStack *hsRhcQ2Vis = makeCatStack(rhcQ2VisVec, "hsRhcQ2Vis", "NuWro/GENIE for various reconstructed final states; Q^{2} / GeV^{2}; NuWro/GENIE");
+  hsRhcQ2Vis->Write();
+
+  TLine *l = new TLine(0., 1., 3., 1.);
   l->SetLineStyle(2);
   l->SetLineWidth(2);
   l->Write("l");
